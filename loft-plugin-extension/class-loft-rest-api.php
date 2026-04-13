@@ -548,6 +548,9 @@ class Loft_REST_API {
     // -------------------------------------------------------------------------
 
     private function get_s3_bucket() {
+        if ( defined( 'LOFT_AWS_BUCKET' ) && LOFT_AWS_BUCKET ) {
+            return LOFT_AWS_BUCKET;
+        }
         if ( defined( 'LOFT_S3_BUCKET' ) && LOFT_S3_BUCKET ) {
             return LOFT_S3_BUCKET;
         }
@@ -563,9 +566,9 @@ class Loft_REST_API {
             );
         }
 
-        $key    = defined( 'LOFT_S3_KEY' )    ? LOFT_S3_KEY    : get_option( 'loft_s3_key', '' );
-        $secret = defined( 'LOFT_S3_SECRET' ) ? LOFT_S3_SECRET : get_option( 'loft_s3_secret', '' );
-        $region = defined( 'LOFT_S3_REGION' ) ? LOFT_S3_REGION : get_option( 'loft_s3_region', 'us-east-1' );
+        $key    = defined( 'LOFT_AWS_KEY' )    ? LOFT_AWS_KEY    : ( defined( 'LOFT_S3_KEY' )    ? LOFT_S3_KEY    : get_option( 'loft_s3_key', '' ) );
+        $secret = defined( 'LOFT_AWS_SECRET' ) ? LOFT_AWS_SECRET : ( defined( 'LOFT_S3_SECRET' ) ? LOFT_S3_SECRET : get_option( 'loft_s3_secret', '' ) );
+        $region = defined( 'LOFT_AWS_REGION' ) ? LOFT_AWS_REGION : ( defined( 'LOFT_S3_REGION' ) ? LOFT_S3_REGION : get_option( 'loft_s3_region', 'us-east-1' ) );
 
         if ( empty( $key ) || empty( $secret ) ) {
             return new WP_Error(
