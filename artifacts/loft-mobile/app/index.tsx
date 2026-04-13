@@ -1,3 +1,4 @@
+import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
@@ -36,6 +37,7 @@ export default function LoginScreen() {
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const passwordRef = useRef<TextInput>(null);
@@ -112,6 +114,27 @@ export default function LoginScreen() {
       fontFamily: "Inter_400Regular",
       color: colors.foreground,
       marginBottom: 16,
+    },
+    inputRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: colors.inputBackground,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 10,
+      marginBottom: 16,
+    },
+    inputInRow: {
+      flex: 1,
+      paddingHorizontal: 14,
+      paddingVertical: 14,
+      fontSize: 15,
+      fontFamily: "Inter_400Regular",
+      color: colors.foreground,
+    },
+    eyeButton: {
+      paddingHorizontal: 14,
+      paddingVertical: 14,
     },
     button: {
       backgroundColor: colors.primary,
@@ -198,21 +221,34 @@ export default function LoginScreen() {
         />
 
         <Text style={styles.sectionLabel}>Password</Text>
-        <TextInput
-          ref={passwordRef}
-          testID="password-input"
-          style={styles.input}
-          placeholder="Password"
-          placeholderTextColor={colors.mutedForeground}
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry={true}
-          autoCapitalize="none"
-          autoCorrect={false}
-          returnKeyType="go"
-          onSubmitEditing={handleLogin}
-          editable={!submitting}
-        />
+        <View style={styles.inputRow}>
+          <TextInput
+            ref={passwordRef}
+            testID="password-input"
+            style={styles.inputInRow}
+            placeholder="Password"
+            placeholderTextColor={colors.mutedForeground}
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry={!showPassword}
+            autoCapitalize="none"
+            autoCorrect={false}
+            returnKeyType="go"
+            onSubmitEditing={handleLogin}
+            editable={!submitting}
+          />
+          <TouchableOpacity
+            style={styles.eyeButton}
+            onPress={() => setShowPassword((v) => !v)}
+            activeOpacity={0.7}
+          >
+            <Feather
+              name={showPassword ? "eye-off" : "eye"}
+              size={18}
+              color={colors.mutedForeground}
+            />
+          </TouchableOpacity>
+        </View>
 
         {error && (
           <View style={styles.errorBox}>

@@ -1,4 +1,5 @@
 import * as Haptics from "expo-haptics";
+import { Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useRef, useState } from "react";
 import {
@@ -31,6 +32,7 @@ export default function RegisterScreen() {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -132,6 +134,27 @@ export default function RegisterScreen() {
       color: colors.foreground,
       marginBottom: 16,
     },
+    inputRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: colors.inputBackground,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 10,
+      marginBottom: 16,
+    },
+    inputInRow: {
+      flex: 1,
+      paddingHorizontal: 14,
+      paddingVertical: 14,
+      fontSize: 15,
+      fontFamily: "Inter_400Regular",
+      color: colors.foreground,
+    },
+    eyeButton: {
+      paddingHorizontal: 14,
+      paddingVertical: 14,
+    },
     button: {
       backgroundColor: colors.primary,
       borderRadius: 12,
@@ -230,20 +253,33 @@ export default function RegisterScreen() {
         />
 
         <Text style={styles.sectionLabel}>Password</Text>
-        <TextInput
-          ref={passwordRef}
-          style={styles.input}
-          placeholder="At least 8 characters"
-          placeholderTextColor={colors.mutedForeground}
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry={true}
-          autoCapitalize="none"
-          autoCorrect={false}
-          returnKeyType="go"
-          onSubmitEditing={handleRegister}
-          editable={!submitting}
-        />
+        <View style={styles.inputRow}>
+          <TextInput
+            ref={passwordRef}
+            style={styles.inputInRow}
+            placeholder="At least 8 characters"
+            placeholderTextColor={colors.mutedForeground}
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry={!showPassword}
+            autoCapitalize="none"
+            autoCorrect={false}
+            returnKeyType="go"
+            onSubmitEditing={handleRegister}
+            editable={!submitting}
+          />
+          <TouchableOpacity
+            style={styles.eyeButton}
+            onPress={() => setShowPassword((v) => !v)}
+            activeOpacity={0.7}
+          >
+            <Feather
+              name={showPassword ? "eye-off" : "eye"}
+              size={18}
+              color={colors.mutedForeground}
+            />
+          </TouchableOpacity>
+        </View>
 
         {error && (
           <View style={styles.errorBox}>
