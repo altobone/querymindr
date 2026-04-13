@@ -81,9 +81,14 @@ export default function LoginScreen() {
       flex: 1,
       backgroundColor: colors.background,
     },
+    bannerContainer: {
+      width: "100%",
+      height: 320,
+      overflow: "hidden",
+    },
     banner: {
       width: "100%",
-      height: 260,
+      height: 520,
     },
     form: {
       flex: 1,
@@ -167,11 +172,13 @@ export default function LoginScreen() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <View style={{ paddingTop: insets.top }}>
-        <Image
-          source={BANNER}
-          style={styles.banner}
-          resizeMode="cover"
-        />
+        <View style={styles.bannerContainer}>
+          <Image
+            source={BANNER}
+            style={styles.banner}
+            resizeMode="cover"
+          />
+        </View>
       </View>
 
       <ScrollView
