@@ -83,7 +83,7 @@ export default function LoginScreen() {
     },
     banner: {
       width: "100%",
-      aspectRatio: 826 / 622,
+      aspectRatio: 1290 / 968,
     },
     form: {
       flex: 1,
