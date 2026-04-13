@@ -2,6 +2,7 @@
   "expo": {
     "name": "The Loft",
     "slug": "loft-mobile",
+    "owner": "altobone",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -15,6 +16,7 @@
     },
     "ios": {
       "supportsTablet": false,
+      "bundleIdentifier": "com.musicsavvy.theloft",
       "infoPlist": {
         "NSMicrophoneUsageDescription": "The Loft needs microphone access to record your playing for submission."
       }
