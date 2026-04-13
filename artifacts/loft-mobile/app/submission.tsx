@@ -1,4 +1,5 @@
 import { Feather } from "@expo/vector-icons";
+import * as DocumentPicker from "expo-document-picker";
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
@@ -27,7 +28,7 @@ import {
   uploadToS3,
 } from "@/lib/api";
 
-type SubmissionMode = "record" | "link";
+type SubmissionMode = "record" | "link" | "upload";
 
 function toMessage(error: unknown): string {
   if (error instanceof Error) return error.message;
@@ -49,6 +50,7 @@ export default function SubmissionScreen() {
   const [recordingUri, setRecordingUri] = useState<string | null>(null);
   const [videoUrl, setVideoUrl] = useState("");
   const [videoStartTime, setVideoStartTime] = useState("");
+  const [mp3File, setMp3File] = useState<{ uri: string; name: string; size?: number } | null>(null);
   const [doesntFeel, setDoesntFeel] = useState("");
   const [wouldImprove, setWouldImprove] = useState("");
   const [selectedInstrument, setSelectedInstrument] = useState<Instrument | null>(null);
@@ -72,12 +74,35 @@ export default function SubmissionScreen() {
     setRecordingUri(null);
   }, []);
 
+  const handlePickMp3 = useCallback(async () => {
+    const result = await DocumentPicker.getDocumentAsync({
+      type: "audio/mpeg",
+      copyToCacheDirectory: true,
+    });
+    if (result.canceled) return;
+    const asset = result.assets[0];
+    setMp3File({ uri: asset.uri, name: asset.name, size: asset.size });
+  }, []);
+
+  const handleClearMp3 = useCallback(() => {
+    setMp3File(null);
+  }, []);
+
+  const formatFileSize = (bytes?: number): string => {
+    if (!bytes) return "";
+    if (bytes < 1024 * 1024) return ` (${Math.round(bytes / 1024)} KB)`;
+    return ` (${(bytes / (1024 * 1024)).toFixed(1)} MB)`;
+  };
+
   const validateForm = (): string | null => {
     if (mode === "record" && !recordingUri) {
       return "Please record your playing first.";
     }
     if (mode === "link" && !videoUrl.trim()) {
       return "Please enter a YouTube or Vimeo URL.";
+    }
+    if (mode === "upload" && !mp3File) {
+      return "Please select an MP3 file to upload.";
     }
     if (!doesntFeel.trim()) {
       return "Please describe what doesn't feel right.";
@@ -112,6 +137,13 @@ export default function SubmissionScreen() {
           "recording_" + Date.now().toString() + Math.random().toString(36).substring(2, 9) + ".m4a";
         const { upload_url, object_key } = await presignUpload(filename, authHeader);
         await uploadToS3(upload_url, recordingUri);
+        s3ObjectKey = object_key;
+      } else if (mode === "upload" && mp3File) {
+        const ext = mp3File.name.split(".").pop() ?? "mp3";
+        const filename =
+          "upload_" + Date.now().toString() + Math.random().toString(36).substring(2, 9) + "." + ext;
+        const { upload_url, object_key } = await presignUpload(filename, authHeader);
+        await uploadToS3(upload_url, mp3File.uri);
         s3ObjectKey = object_key;
       }
 
@@ -187,15 +219,15 @@ export default function SubmissionScreen() {
     },
     modeToggle: {
       flexDirection: "row",
-      gap: 10,
+      gap: 8,
     },
     modeBtn: {
       flex: 1,
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "center",
-      gap: 8,
-      paddingVertical: 12,
+      gap: 6,
+      paddingVertical: 11,
       borderRadius: 10,
       backgroundColor: colors.secondary,
     },
@@ -203,12 +235,65 @@ export default function SubmissionScreen() {
       backgroundColor: colors.primary,
     },
     modeBtnText: {
-      fontSize: 14,
+      fontSize: 12,
       fontFamily: "Inter_500Medium",
       color: colors.secondaryForeground,
     },
     modeBtnTextActive: {
       color: colors.primaryForeground,
+    },
+    uploadArea: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderStyle: "dashed",
+      borderRadius: 12,
+      padding: 24,
+      alignItems: "center",
+      gap: 10,
+    },
+    uploadAreaActive: {
+      borderColor: colors.primary,
+      backgroundColor: "rgba(255,255,255,0.03)",
+    },
+    uploadIcon: {
+      opacity: 0.6,
+    },
+    uploadHint: {
+      fontSize: 14,
+      fontFamily: "Inter_400Regular",
+      color: colors.mutedForeground,
+      textAlign: "center",
+    },
+    uploadBtn: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      paddingVertical: 10,
+      paddingHorizontal: 20,
+      borderRadius: 8,
+      backgroundColor: colors.secondary,
+    },
+    uploadBtnText: {
+      fontSize: 14,
+      fontFamily: "Inter_500Medium",
+      color: colors.secondaryForeground,
+    },
+    fileRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+      backgroundColor: colors.secondary,
+      borderRadius: 10,
+      padding: 12,
+    },
+    fileName: {
+      flex: 1,
+      fontSize: 13,
+      fontFamily: "Inter_400Regular",
+      color: colors.foreground,
+    },
+    clearBtn: {
+      padding: 4,
     },
     textArea: {
       backgroundColor: colors.inputBackground,
@@ -320,7 +405,7 @@ export default function SubmissionScreen() {
               >
                 <Feather
                   name="mic"
-                  size={16}
+                  size={14}
                   color={mode === "record" ? colors.primaryForeground : colors.secondaryForeground}
                 />
                 <Text style={[styles.modeBtnText, mode === "record" && styles.modeBtnTextActive]}>
@@ -334,22 +419,38 @@ export default function SubmissionScreen() {
               >
                 <Feather
                   name="link"
-                  size={16}
+                  size={14}
                   color={mode === "link" ? colors.primaryForeground : colors.secondaryForeground}
                 />
                 <Text style={[styles.modeBtnText, mode === "link" && styles.modeBtnTextActive]}>
                   Video Link
                 </Text>
               </TouchableOpacity>
+              <TouchableOpacity
+                testID="mode-upload"
+                style={[styles.modeBtn, mode === "upload" && styles.modeBtnActive]}
+                onPress={() => setMode("upload")}
+              >
+                <Feather
+                  name="upload"
+                  size={14}
+                  color={mode === "upload" ? colors.primaryForeground : colors.secondaryForeground}
+                />
+                <Text style={[styles.modeBtnText, mode === "upload" && styles.modeBtnTextActive]}>
+                  MP3 File
+                </Text>
+              </TouchableOpacity>
             </View>
 
-            {mode === "record" ? (
+            {mode === "record" && (
               <RecordingControls
                 onRecordingComplete={handleRecordingComplete}
                 onClear={handleClearRecording}
                 recordingUri={recordingUri}
               />
-            ) : (
+            )}
+
+            {mode === "link" && (
               <View style={{ gap: 10 }}>
                 <TextInput
                   testID="video-url-input"
@@ -373,6 +474,36 @@ export default function SubmissionScreen() {
                     autoCapitalize="none"
                     autoCorrect={false}
                   />
+                )}
+              </View>
+            )}
+
+            {mode === "upload" && (
+              <View style={{ gap: 10 }}>
+                {mp3File ? (
+                  <View style={styles.fileRow}>
+                    <Feather name="music" size={16} color={colors.primary} />
+                    <Text style={styles.fileName} numberOfLines={1}>
+                      {mp3File.name}{formatFileSize(mp3File.size)}
+                    </Text>
+                    <TouchableOpacity style={styles.clearBtn} onPress={handleClearMp3}>
+                      <Feather name="x" size={16} color={colors.mutedForeground} />
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <TouchableOpacity
+                    testID="pick-mp3-button"
+                    style={[styles.uploadArea]}
+                    onPress={handlePickMp3}
+                    activeOpacity={0.7}
+                  >
+                    <Feather name="upload" size={28} color={colors.mutedForeground} style={styles.uploadIcon} />
+                    <Text style={styles.uploadHint}>Tap to select an MP3 file{"\n"}from your device</Text>
+                    <View style={styles.uploadBtn}>
+                      <Feather name="folder" size={14} color={colors.secondaryForeground} />
+                      <Text style={styles.uploadBtnText}>Browse Files</Text>
+                    </View>
+                  </TouchableOpacity>
                 )}
               </View>
             )}
