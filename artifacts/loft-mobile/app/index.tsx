@@ -6,6 +6,7 @@ import {
   Image,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -24,10 +25,12 @@ function toMessage(error: unknown): string {
   return String(error);
 }
 
+const BANNER = require("../assets/images/loft-banner.webp");
+
 export default function LoginScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { isAuthenticated, isLoading, login, getAuthHeader } = useAuth();
+  const { isAuthenticated, isLoading, login } = useAuth();
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -56,8 +59,8 @@ export default function LoginScreen() {
       await login(username.trim(), password.trim());
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.replace("/submission");
-    } catch (error: unknown) {
-      const msg = toMessage(error);
+    } catch (err: unknown) {
+      const msg = toMessage(err);
       if (msg === "invalid_credentials" || msg.includes("401") || msg.includes("403")) {
         setError("Invalid username or application password.");
       } else if (msg === "server_error" || msg.includes("500") || msg.includes("502") || msg.includes("503")) {
@@ -78,39 +81,18 @@ export default function LoginScreen() {
       flex: 1,
       backgroundColor: colors.background,
     },
-    inner: {
+    banner: {
+      width: "100%",
+      height: 260,
+    },
+    form: {
       flex: 1,
       paddingHorizontal: 28,
-      paddingTop: insets.top + (Platform.OS === "web" ? 40 : 20),
+      paddingTop: 28,
       paddingBottom: insets.bottom + (Platform.OS === "web" ? 34 : 20),
-      justifyContent: "center",
     },
-    logo: {
-      width: 72,
-      height: 72,
-      borderRadius: 18,
-      marginBottom: 28,
-      alignSelf: "center",
-    },
-    tagline: {
-      fontSize: 13,
-      fontFamily: "Inter_400Regular",
-      color: colors.mutedForeground,
-      textAlign: "center",
-      marginTop: 6,
-      marginBottom: 40,
-      letterSpacing: 1.5,
-      textTransform: "uppercase",
-    },
-    title: {
-      fontSize: 28,
-      fontFamily: "Inter_700Bold",
-      color: colors.foreground,
-      textAlign: "center",
-      marginBottom: 4,
-    },
-    label: {
-      fontSize: 12,
+    sectionLabel: {
+      fontSize: 11,
       fontFamily: "Inter_600SemiBold",
       color: colors.mutedForeground,
       marginBottom: 6,
@@ -129,9 +111,6 @@ export default function LoginScreen() {
       color: colors.foreground,
       marginBottom: 16,
     },
-    inputFocused: {
-      borderColor: colors.primary,
-    },
     button: {
       backgroundColor: colors.primary,
       borderRadius: 12,
@@ -147,7 +126,7 @@ export default function LoginScreen() {
       fontFamily: "Inter_600SemiBold",
       color: colors.primaryForeground,
     },
-    error: {
+    errorBox: {
       backgroundColor: "rgba(201,68,68,0.12)",
       borderRadius: 8,
       paddingHorizontal: 14,
@@ -165,7 +144,7 @@ export default function LoginScreen() {
       fontFamily: "Inter_400Regular",
       color: colors.mutedForeground,
       textAlign: "center",
-      marginTop: 16,
+      marginTop: 20,
       lineHeight: 18,
     },
     hintLink: {
@@ -187,16 +166,20 @@ export default function LoginScreen() {
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      <View style={styles.inner}>
+      <View style={{ paddingTop: insets.top }}>
         <Image
-          source={require("../assets/images/icon.png")}
-          style={styles.logo}
+          source={BANNER}
+          style={styles.banner}
           resizeMode="cover"
         />
-        <Text style={styles.title}>The Loft</Text>
-        <Text style={styles.tagline}>Music Savvy</Text>
+      </View>
 
-        <Text style={styles.label}>Username</Text>
+      <ScrollView
+        contentContainerStyle={styles.form}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <Text style={styles.sectionLabel}>Username</Text>
         <TextInput
           testID="username-input"
           style={styles.input}
@@ -211,7 +194,7 @@ export default function LoginScreen() {
           editable={!submitting}
         />
 
-        <Text style={styles.label}>Application Password</Text>
+        <Text style={styles.sectionLabel}>Application Password</Text>
         <TextInput
           ref={passwordRef}
           testID="password-input"
@@ -229,14 +212,17 @@ export default function LoginScreen() {
         />
 
         {error && (
-          <View style={styles.error}>
+          <View style={styles.errorBox}>
             <Text style={styles.errorText}>{error}</Text>
           </View>
         )}
 
         <TouchableOpacity
           testID="login-button"
-          style={[styles.button, (submitting || !username || !password) && styles.buttonDisabled]}
+          style={[
+            styles.button,
+            (submitting || !username.trim() || !password.trim()) && styles.buttonDisabled,
+          ]}
           onPress={handleLogin}
           disabled={submitting || !username.trim() || !password.trim()}
           activeOpacity={0.8}
@@ -253,7 +239,7 @@ export default function LoginScreen() {
           <Text style={styles.hintLink}>Application Password</Text>
           {"\n"}from musicsavvy.com → Profile → Application Passwords
         </Text>
-      </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
