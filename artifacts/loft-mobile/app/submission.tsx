@@ -2,7 +2,7 @@ import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Platform,
@@ -30,10 +30,21 @@ import {
 
 type SubmissionMode = "record" | "link";
 
+function toMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  return String(error);
+}
+
 export default function SubmissionScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { logout, getAuthHeader } = useAuth();
+  const { logout, getAuthHeader, isAuthenticated, isLoading } = useAuth();
+
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      router.replace("/");
+    }
+  }, [isLoading, isAuthenticated]);
 
   const [mode, setMode] = useState<SubmissionMode>("record");
   const [recordingUri, setRecordingUri] = useState<string | null>(null);
@@ -127,8 +138,8 @@ export default function SubmissionScreen() {
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.push("/success");
-    } catch (e: any) {
-      const msg = e?.message || "Submission failed. Please try again.";
+    } catch (error: unknown) {
+      const msg = toMessage(error) || "Submission failed. Please try again.";
       setSubmitError(msg.length > 120 ? msg.slice(0, 120) + "…" : msg);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
@@ -285,7 +296,10 @@ export default function SubmissionScreen() {
         <TouchableOpacity
           testID="logout-button"
           style={styles.headerRight}
-          onPress={logout}
+          onPress={async () => {
+            await logout();
+            router.replace("/");
+          }}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
           <Feather name="log-out" size={20} color={colors.mutedForeground} />

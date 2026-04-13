@@ -19,6 +19,11 @@ import { useColors } from "@/hooks/useColors";
 import { fetchInstruments } from "@/lib/api";
 import { encodeBase64 } from "@/lib/base64";
 
+function toMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  return String(error);
+}
+
 export default function LoginScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -51,8 +56,8 @@ export default function LoginScreen() {
       await login(username.trim(), password.trim());
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.replace("/submission");
-    } catch (e: any) {
-      const msg = e?.message || "Login failed. Please check your credentials.";
+    } catch (error: unknown) {
+      const msg = toMessage(error);
       if (msg.includes("401") || msg.includes("403") || msg.includes("Unauthorized") || msg.includes("Forbidden")) {
         setError("Invalid username or application password.");
       } else if (msg.includes("Network") || msg.includes("fetch")) {

@@ -95,8 +95,8 @@ export function RecordingControls({
       setElapsed(0);
       timerRef.current = setInterval(() => setElapsed((t) => t + 1), 1000);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    } catch (e: any) {
-      setError(e?.message || "Could not start recording");
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : "Could not start recording");
     }
   }, [permissionStatus, requestPermission]);
 
@@ -115,8 +115,8 @@ export function RecordingControls({
         setState("done");
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
-    } catch (e: any) {
-      setError(e?.message || "Could not stop recording");
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : "Could not stop recording");
       setState("idle");
     }
   }, [onRecordingComplete]);
@@ -155,7 +155,7 @@ export function RecordingControls({
         await sound.playAsync();
         setIsPlaying(true);
       }
-    } catch (e: any) {
+    } catch {
       setError("Could not play recording");
     }
   }, [recordingUri, isPlaying]);
