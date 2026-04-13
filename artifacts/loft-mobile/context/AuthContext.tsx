@@ -8,20 +8,18 @@ import React, {
 } from "react";
 import { Platform } from "react-native";
 
-import { encodeBase64 } from "@/lib/base64";
-
 const USERNAME_KEY = "loft_username";
-const PASSWORD_KEY = "loft_app_password";
+const TOKEN_KEY = "loft_jwt_token";
 
 interface AuthState {
   username: string | null;
-  password: string | null;
+  token: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
 }
 
 interface AuthContextValue extends AuthState {
-  login: (username: string, password: string) => Promise<void>;
+  login: (username: string, token: string) => Promise<void>;
   logout: () => Promise<void>;
   getAuthHeader: () => string | null;
 }
@@ -54,7 +52,7 @@ async function secureDelete(key: string): Promise<void> {
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AuthState>({
     username: null,
-    password: null,
+    token: null,
     isLoading: true,
     isAuthenticated: false,
   });
@@ -62,22 +60,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     (async () => {
       const username = await secureGet(USERNAME_KEY);
-      const password = await secureGet(PASSWORD_KEY);
+      const token = await secureGet(TOKEN_KEY);
       setState({
         username,
-        password,
+        token,
         isLoading: false,
-        isAuthenticated: !!(username && password),
+        isAuthenticated: !!(username && token),
       });
     })();
   }, []);
 
-  const login = useCallback(async (username: string, password: string) => {
+  const login = useCallback(async (username: string, token: string) => {
     await secureSet(USERNAME_KEY, username);
-    await secureSet(PASSWORD_KEY, password);
+    await secureSet(TOKEN_KEY, token);
     setState({
       username,
-      password,
+      token,
       isLoading: false,
       isAuthenticated: true,
     });
@@ -85,21 +83,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(async () => {
     await secureDelete(USERNAME_KEY);
-    await secureDelete(PASSWORD_KEY);
+    await secureDelete(TOKEN_KEY);
     setState({
       username: null,
-      password: null,
+      token: null,
       isLoading: false,
       isAuthenticated: false,
     });
   }, []);
 
   const getAuthHeader = useCallback(() => {
-    if (!state.username || !state.password) return null;
-    const credentials = `${state.username}:${state.password}`;
-    const encoded = encodeBase64(credentials);
-    return `Basic ${encoded}`;
-  }, [state.username, state.password]);
+    if (!state.token) return null;
+    return `Bearer ${state.token}`;
+  }, [state.token]);
 
   return (
     <AuthContext.Provider value={{ ...state, login, logout, getAuthHeader }}>

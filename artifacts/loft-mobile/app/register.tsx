@@ -1,9 +1,8 @@
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useRef, useState } from "react";
 import {
   ActivityIndicator,
-  Image,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -11,51 +10,44 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  useWindowDimensions,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
-import { loginWithCredentials } from "@/lib/api";
+import { registerUser } from "@/lib/api";
 
 function toMessage(error: unknown): string {
   if (error instanceof Error) return error.message;
   return String(error);
 }
 
-const BANNER = require("../assets/images/loft-banner.webp");
-
-export default function LoginScreen() {
+export default function RegisterScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { width: screenWidth } = useWindowDimensions();
-  const bannerHeight = Math.round(screenWidth * (968 / 1290));
-  const { isAuthenticated, isLoading, login } = useAuth();
+  const { login } = useAuth();
 
   const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const emailRef = useRef<TextInput>(null);
   const passwordRef = useRef<TextInput>(null);
 
-  useEffect(() => {
-    if (!isLoading && isAuthenticated) {
-      router.replace("/submission");
-    }
-  }, [isLoading, isAuthenticated]);
-
-  const handleLogin = async () => {
-    if (!username.trim() || !password.trim()) {
-      setError("Please enter your username and password.");
+  const handleRegister = async () => {
+    if (!username.trim() || !email.trim() || !password.trim()) {
+      setError("Please fill in all fields.");
       return;
     }
     setSubmitting(true);
     setError(null);
     try {
-      const { token, username: returnedUsername } = await loginWithCredentials(
+      const { token, username: returnedUsername } = await registerUser(
         username.trim(),
+        email.trim(),
         password.trim()
       );
       await login(returnedUsername, token);
@@ -63,14 +55,20 @@ export default function LoginScreen() {
       router.replace("/submission");
     } catch (err: unknown) {
       const msg = toMessage(err);
-      if (msg === "invalid_credentials") {
-        setError("Incorrect username or password.");
+      if (msg === "username_exists") {
+        setError("That username is already taken. Please choose another.");
+      } else if (msg === "email_exists") {
+        setError("An account with that email already exists. Try signing in.");
+      } else if (msg === "registration_disabled") {
+        setError("New account registration is currently closed. Please contact support.");
+      } else if (msg === "password_too_short") {
+        setError("Password must be at least 8 characters.");
       } else if (msg === "server_error") {
         setError("The server is temporarily unavailable. Please try again shortly.");
       } else if (msg.includes("Network") || msg.includes("fetch") || msg.includes("Failed to fetch")) {
         setError("Network error. Please check your internet connection.");
       } else {
-        setError("Login failed. Please check your credentials and try again.");
+        setError("Registration failed. Please check your details and try again.");
       }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
@@ -83,12 +81,33 @@ export default function LoginScreen() {
       flex: 1,
       backgroundColor: colors.background,
     },
-    banner: {
-      width: screenWidth,
-      height: bannerHeight,
+    header: {
+      paddingTop: insets.top + 16,
+      paddingHorizontal: 28,
+      paddingBottom: 24,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    backButton: {
+      marginBottom: 20,
+    },
+    backText: {
+      fontSize: 14,
+      fontFamily: "Inter_500Medium",
+      color: colors.primary,
+    },
+    title: {
+      fontSize: 26,
+      fontFamily: "Inter_700Bold",
+      color: colors.foreground,
+      marginBottom: 4,
+    },
+    subtitle: {
+      fontSize: 14,
+      fontFamily: "Inter_400Regular",
+      color: colors.mutedForeground,
     },
     form: {
-      flex: 1,
       paddingHorizontal: 28,
       paddingTop: 28,
       paddingBottom: insets.bottom + (Platform.OS === "web" ? 34 : 20),
@@ -156,25 +175,23 @@ export default function LoginScreen() {
     },
   });
 
-  if (isLoading) {
-    return (
-      <View style={[styles.container, { alignItems: "center", justifyContent: "center" }]}>
-        <ActivityIndicator color={colors.primary} size="large" />
-      </View>
-    );
-  }
+  const isDisabled = submitting || !username.trim() || !email.trim() || !password.trim();
 
   return (
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      <View style={{ paddingTop: insets.top }}>
-        <Image
-          source={BANNER}
-          style={styles.banner}
-          resizeMode="stretch"
-        />
+      <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.back()}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.backText}>← Back to Sign In</Text>
+        </TouchableOpacity>
+        <Text style={styles.title}>Create Account</Text>
+        <Text style={styles.subtitle}>Join Music Savvy to submit your playing</Text>
       </View>
 
       <ScrollView
@@ -184,12 +201,27 @@ export default function LoginScreen() {
       >
         <Text style={styles.sectionLabel}>Username</Text>
         <TextInput
-          testID="username-input"
           style={styles.input}
-          placeholder="musicsavvy.com username"
+          placeholder="Choose a username"
           placeholderTextColor={colors.mutedForeground}
           value={username}
           onChangeText={setUsername}
+          autoCapitalize="none"
+          autoCorrect={false}
+          returnKeyType="next"
+          onSubmitEditing={() => emailRef.current?.focus()}
+          editable={!submitting}
+        />
+
+        <Text style={styles.sectionLabel}>Email</Text>
+        <TextInput
+          ref={emailRef}
+          style={styles.input}
+          placeholder="your@email.com"
+          placeholderTextColor={colors.mutedForeground}
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
           autoCapitalize="none"
           autoCorrect={false}
           returnKeyType="next"
@@ -200,9 +232,8 @@ export default function LoginScreen() {
         <Text style={styles.sectionLabel}>Password</Text>
         <TextInput
           ref={passwordRef}
-          testID="password-input"
           style={styles.input}
-          placeholder="Password"
+          placeholder="At least 8 characters"
           placeholderTextColor={colors.mutedForeground}
           value={password}
           onChangeText={setPassword}
@@ -210,7 +241,7 @@ export default function LoginScreen() {
           autoCapitalize="none"
           autoCorrect={false}
           returnKeyType="go"
-          onSubmitEditing={handleLogin}
+          onSubmitEditing={handleRegister}
           editable={!submitting}
         />
 
@@ -221,30 +252,26 @@ export default function LoginScreen() {
         )}
 
         <TouchableOpacity
-          testID="login-button"
-          style={[
-            styles.button,
-            (submitting || !username.trim() || !password.trim()) && styles.buttonDisabled,
-          ]}
-          onPress={handleLogin}
-          disabled={submitting || !username.trim() || !password.trim()}
+          style={[styles.button, isDisabled && styles.buttonDisabled]}
+          onPress={handleRegister}
+          disabled={isDisabled}
           activeOpacity={0.8}
         >
           {submitting ? (
             <ActivityIndicator color={colors.primaryForeground} size="small" />
           ) : (
-            <Text style={styles.buttonText}>Sign In</Text>
+            <Text style={styles.buttonText}>Create Account</Text>
           )}
         </TouchableOpacity>
 
         <View style={styles.footer}>
           <Text style={styles.footerText}>
-            New to Music Savvy?{" "}
+            Already have an account?{" "}
             <Text
               style={styles.footerLink}
-              onPress={() => router.push("/register")}
+              onPress={() => router.back()}
             >
-              Create an account
+              Sign in
             </Text>
           </Text>
         </View>
