@@ -1,0 +1,8 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "6yj3XQz9ciyqs7IipaJn0"
+uri = "file://artifacts/loft-mobile/assets/images/icon.png"
+type = "image"
+title = "generated_image"
