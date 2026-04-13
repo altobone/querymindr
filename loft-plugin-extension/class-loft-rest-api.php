@@ -204,9 +204,10 @@ class Loft_REST_API {
             );
 
         } catch ( \Exception $e ) {
+            error_log( '[Loft REST API] S3 presign error: ' . $e->getMessage() );
             return new WP_Error(
                 'loft_s3_presign_error',
-                'Could not generate upload URL: ' . $e->getMessage(),
+                'Could not generate upload URL. Please try again or contact support.',
                 array( 'status' => 500 )
             );
         }
