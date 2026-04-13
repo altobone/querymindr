@@ -224,7 +224,7 @@ export default function LoginScreen() {
         <View style={styles.welcome}>
           <Text style={styles.welcomeTitle}>Welcome to the Loft.</Text>
           <Text style={styles.welcomeBody}>
-            Upload 30 to 60 seconds of you playing something that isn't working yet. You'll get back a written review of what's happening and specific next steps — so the next time you stand up to play, you're not guessing anymore.{"\n\n"}Sign into your Music Savvy account or set up your free account, and let's get started!
+            Upload 30 to 60 seconds of you improvising over a track (or alone). You'll get back a written review of what's happening and specific next steps so the next time you stand up to play, you're not guessing anymore.{"\n\n"}Sign into your Music Savvy account or set up your free account, and let's get started!
           </Text>
         </View>
 
