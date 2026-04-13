@@ -43,7 +43,10 @@ export async function validateCredentials(authHeader: string): Promise<void> {
     body: JSON.stringify({ filename: "auth-check.m4a" }),
   });
   if (res.status === 401 || res.status === 403) {
-    throw new Error(`HTTP ${res.status}`);
+    throw new Error("invalid_credentials");
+  }
+  if (!res.ok && res.status >= 500) {
+    throw new Error("server_error");
   }
 }
 

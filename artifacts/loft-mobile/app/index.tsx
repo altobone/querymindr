@@ -58,9 +58,11 @@ export default function LoginScreen() {
       router.replace("/submission");
     } catch (error: unknown) {
       const msg = toMessage(error);
-      if (msg.includes("401") || msg.includes("403") || msg.includes("Unauthorized") || msg.includes("Forbidden")) {
+      if (msg === "invalid_credentials" || msg.includes("401") || msg.includes("403")) {
         setError("Invalid username or application password.");
-      } else if (msg.includes("Network") || msg.includes("fetch")) {
+      } else if (msg === "server_error" || msg.includes("500") || msg.includes("502") || msg.includes("503")) {
+        setError("The server is temporarily unavailable. Please try again shortly.");
+      } else if (msg.includes("Network") || msg.includes("fetch") || msg.includes("Failed to fetch")) {
         setError("Network error. Please check your internet connection.");
       } else {
         setError("Login failed. Please check your credentials and try again.");
