@@ -7,7 +7,6 @@ import {
   ActivityIndicator,
   Platform,
   StyleSheet,
-  Switch,
   Text,
   TextInput,
   TouchableOpacity,
@@ -48,7 +47,6 @@ export default function SubmissionScreen() {
 
   const [mode, setMode] = useState<SubmissionMode>("record");
   const [recordingUri, setRecordingUri] = useState<string | null>(null);
-  const [recordingMime, setRecordingMime] = useState<string>("audio/m4a");
   const [videoUrl, setVideoUrl] = useState("");
   const [videoStartTime, setVideoStartTime] = useState("");
   const [doesntFeel, setDoesntFeel] = useState("");
@@ -66,9 +64,8 @@ export default function SubmissionScreen() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const handleRecordingComplete = useCallback((uri: string, mimeType: string) => {
+  const handleRecordingComplete = useCallback((uri: string) => {
     setRecordingUri(uri);
-    setRecordingMime(mimeType);
   }, []);
 
   const handleClearRecording = useCallback(() => {
@@ -114,7 +111,7 @@ export default function SubmissionScreen() {
         const filename =
           "recording_" + Date.now().toString() + Math.random().toString(36).substring(2, 9) + ".m4a";
         const { upload_url, object_key } = await presignUpload(filename, authHeader);
-        await uploadToS3(upload_url, recordingUri, recordingMime);
+        await uploadToS3(upload_url, recordingUri);
         s3ObjectKey = object_key;
       }
 

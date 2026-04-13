@@ -3,7 +3,6 @@ export const API_BASE = "https://musicsavvy.com/wp-json/the-loft/v1";
 export interface Instrument {
   id: number;
   name: string;
-  slug: string;
 }
 
 export interface PresignResponse {
@@ -34,6 +33,20 @@ export async function fetchInstruments(authHeader: string): Promise<Instrument[]
   return data as Instrument[];
 }
 
+export async function validateCredentials(authHeader: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/presign`, {
+    method: "POST",
+    headers: {
+      Authorization: authHeader,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ filename: "auth-check.m4a" }),
+  });
+  if (res.status === 401 || res.status === 403) {
+    throw new Error(`HTTP ${res.status}`);
+  }
+}
+
 export async function presignUpload(
   filename: string,
   authHeader: string
@@ -55,15 +68,14 @@ export async function presignUpload(
 
 export async function uploadToS3(
   uploadUrl: string,
-  audioUri: string,
-  mimeType: string
+  audioUri: string
 ): Promise<void> {
   const audioRes = await fetch(audioUri);
   const blob = await audioRes.blob();
   const s3Res = await fetch(uploadUrl, {
     method: "PUT",
     headers: {
-      "Content-Type": mimeType,
+      "Content-Type": "audio/mp4",
     },
     body: blob,
   });

@@ -16,7 +16,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
-import { fetchInstruments } from "@/lib/api";
+import { validateCredentials } from "@/lib/api";
 import { encodeBase64 } from "@/lib/base64";
 
 function toMessage(error: unknown): string {
@@ -52,7 +52,7 @@ export default function LoginScreen() {
       const credentials = `${username.trim()}:${password.trim()}`;
       const encoded = encodeBase64(credentials);
       const authHeader = `Basic ${encoded}`;
-      await fetchInstruments(authHeader);
+      await validateCredentials(authHeader);
       await login(username.trim(), password.trim());
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.replace("/submission");

@@ -14,7 +14,7 @@ import {
 import { useColors } from "@/hooks/useColors";
 
 interface RecordingControlsProps {
-  onRecordingComplete: (uri: string, mimeType: string) => void;
+  onRecordingComplete: (uri: string) => void;
   onClear: () => void;
   recordingUri: string | null;
 }
@@ -111,7 +111,7 @@ export function RecordingControls({
       const uri = recordingRef.current.getURI();
       recordingRef.current = null;
       if (uri) {
-        onRecordingComplete(uri, "audio/m4a");
+        onRecordingComplete(uri);
         setState("done");
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
