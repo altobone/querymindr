@@ -18,7 +18,8 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.musicsavvy.theloft",
       "infoPlist": {
-        "NSMicrophoneUsageDescription": "The Loft needs microphone access to record your playing for submission."
+        "NSMicrophoneUsageDescription": "The Loft needs microphone access to record your playing for submission.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
