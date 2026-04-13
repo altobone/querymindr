@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import { fetchInstruments } from "@/lib/api";
+import { encodeBase64 } from "@/lib/base64";
 
 export default function LoginScreen() {
   const colors = useColors();
@@ -44,7 +45,7 @@ export default function LoginScreen() {
     setError(null);
     try {
       const credentials = `${username.trim()}:${password.trim()}`;
-      const encoded = btoa(credentials);
+      const encoded = encodeBase64(credentials);
       const authHeader = `Basic ${encoded}`;
       await fetchInstruments(authHeader);
       await login(username.trim(), password.trim());

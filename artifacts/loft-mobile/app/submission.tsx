@@ -351,16 +351,18 @@ export default function SubmissionScreen() {
                   autoCorrect={false}
                   keyboardType="url"
                 />
-                <TextInput
-                  testID="video-start-input"
-                  style={styles.input}
-                  placeholder="Start time (optional, e.g. 0:32)"
-                  placeholderTextColor={colors.mutedForeground}
-                  value={videoStartTime}
-                  onChangeText={setVideoStartTime}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                />
+                {videoUrl.trim().length > 0 && (
+                  <TextInput
+                    testID="video-start-input"
+                    style={styles.input}
+                    placeholder="Start time (optional, e.g. 0:32)"
+                    placeholderTextColor={colors.mutedForeground}
+                    value={videoStartTime}
+                    onChangeText={setVideoStartTime}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                  />
+                )}
               </View>
             )}
           </View>

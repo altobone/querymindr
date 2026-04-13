@@ -8,6 +8,8 @@ import React, {
 } from "react";
 import { Platform } from "react-native";
 
+import { encodeBase64 } from "@/lib/base64";
+
 const USERNAME_KEY = "loft_username";
 const PASSWORD_KEY = "loft_app_password";
 
@@ -95,7 +97,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const getAuthHeader = useCallback(() => {
     if (!state.username || !state.password) return null;
     const credentials = `${state.username}:${state.password}`;
-    const encoded = btoa(credentials);
+    const encoded = encodeBase64(credentials);
     return `Basic ${encoded}`;
   }, [state.username, state.password]);
 
