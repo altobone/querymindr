@@ -16,7 +16,7 @@ const colors = {
     secondaryForeground: "#C9C3B5",
 
     muted: "#252630",
-    mutedForeground: "#7A7668",
+    mutedForeground: "#A8A199",
 
     accent: "#C9973B",
     accentForeground: "#0E0F13",

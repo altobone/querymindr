@@ -164,6 +164,22 @@ export default function LoginScreen() {
       color: colors.destructive,
       textAlign: "center",
     },
+    welcome: {
+      marginBottom: 28,
+    },
+    welcomeTitle: {
+      fontSize: 20,
+      fontFamily: "Inter_700Bold",
+      color: colors.foreground,
+      marginBottom: 10,
+    },
+    welcomeBody: {
+      fontSize: 15,
+      fontFamily: "Inter_400Regular",
+      color: colors.foreground,
+      lineHeight: 23,
+      opacity: 0.85,
+    },
     footer: {
       marginTop: 24,
       alignItems: "center",
@@ -205,6 +221,13 @@ export default function LoginScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
+        <View style={styles.welcome}>
+          <Text style={styles.welcomeTitle}>Welcome to the Loft.</Text>
+          <Text style={styles.welcomeBody}>
+            Upload 30 to 60 seconds of you playing something that isn't working yet. You'll get back a written review of what's happening and specific next steps — so the next time you stand up to play, you're not guessing anymore.{"\n\n"}Sign into your Music Savvy account or set up your free account, and let's get started!
+          </Text>
+        </View>
+
         <Text style={styles.sectionLabel}>Username</Text>
         <TextInput
           testID="username-input"
