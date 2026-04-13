@@ -254,6 +254,11 @@ class Loft_REST_API {
             }
         }
 
+        // Honeypot check — mirrors AJAX handler; silently succeed if the hidden field is populated
+        if ( ! empty( $request->get_param( 'loft_hp_field' ) ) ) {
+            return rest_ensure_response( array( 'success' => true, 'message' => 'Form captured.' ) );
+        }
+
         // Sanitize inputs
         $s3_object_key      = sanitize_text_field( (string) $request->get_param( 's3_object_key' ) );
         $video_url          = esc_url_raw( (string) $request->get_param( 'submission_video_url' ) );
