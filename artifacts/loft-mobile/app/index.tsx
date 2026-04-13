@@ -11,6 +11,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -30,6 +31,8 @@ const BANNER = require("../assets/images/loft-banner.webp");
 export default function LoginScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const { width: screenWidth } = useWindowDimensions();
+  const bannerHeight = Math.round(screenWidth * (968 / 1290));
   const { isAuthenticated, isLoading, login } = useAuth();
 
   const [username, setUsername] = useState("");
@@ -82,8 +85,8 @@ export default function LoginScreen() {
       backgroundColor: colors.background,
     },
     banner: {
-      width: "100%",
-      aspectRatio: 1290 / 968,
+      width: screenWidth,
+      height: bannerHeight,
     },
     form: {
       flex: 1,
@@ -170,7 +173,7 @@ export default function LoginScreen() {
         <Image
           source={BANNER}
           style={styles.banner}
-          resizeMode="cover"
+          resizeMode="stretch"
         />
       </View>
 
