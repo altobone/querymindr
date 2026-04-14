@@ -5,10 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { HardDrive, Activity, AlertTriangle, CheckCircle2, Cpu } from "lucide-react";
+import { HardDrive, Activity, AlertTriangle, CheckCircle2, Cpu, KeyRound, Eye, EyeOff } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 
 const MODEL_STORAGE_KEY = "file-finder-ai-model";
 const MODEL_OPTIONS = [
@@ -19,7 +20,39 @@ const MODEL_OPTIONS = [
 export default function SettingsPage() {
   const [rootDir, setRootDir] = useState("/Users/admin");
   const [selectedModel, setSelectedModel] = useState<string>(() => localStorage.getItem(MODEL_STORAGE_KEY) ?? "claude-haiku-4-5");
+  const [apiKey, setApiKey] = useState("");
+  const [showKey, setShowKey] = useState(false);
+  const [apiKeyStatus, setApiKeyStatus] = useState<"unknown" | "configured" | "missing">("unknown");
+  const [savingKey, setSavingKey] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    fetch("/file-finder/ai-config")
+      .then((r) => r.json())
+      .then((d: { configured: boolean }) => setApiKeyStatus(d.configured ? "configured" : "missing"))
+      .catch(() => setApiKeyStatus("missing"));
+  }, []);
+
+  const handleSaveApiKey = async () => {
+    setSavingKey(true);
+    try {
+      const res = await fetch("/file-finder/ai-config", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ api_key: apiKey }),
+      });
+      const data = await res.json() as { ok: boolean; message: string };
+      if (data.ok) {
+        setApiKeyStatus(apiKey.trim() ? "configured" : "missing");
+        setApiKey("");
+        toast({ title: apiKey.trim() ? "API Key Saved" : "API Key Cleared", description: data.message });
+      }
+    } catch {
+      toast({ title: "Error", description: "Could not save API key.", variant: "destructive" });
+    } finally {
+      setSavingKey(false);
+    }
+  };
 
   const handleModelChange = (value: string) => {
     setSelectedModel(value);
@@ -68,6 +101,57 @@ export default function SettingsPage() {
 
       <ScrollArea className="flex-1 p-6">
         <div className="max-w-3xl space-y-8 pb-10">
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <KeyRound className="w-5 h-5 text-primary" />
+                Anthropic API Key
+                {apiKeyStatus === "configured" && <Badge variant="secondary" className="ml-2 text-green-400 border-green-600">Configured</Badge>}
+                {apiKeyStatus === "missing" && <Badge variant="secondary" className="ml-2 text-yellow-400 border-yellow-600">Not set</Badge>}
+              </CardTitle>
+              <CardDescription>
+                Required for AI Search, file summaries, and "More Like This". Get your key at <span className="font-mono text-xs">console.anthropic.com</span>. Saved for this server session only.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex gap-2 items-center">
+                <div className="relative flex-1">
+                  <Input
+                    type={showKey ? "text" : "password"}
+                    value={apiKey}
+                    onChange={(e) => setApiKey(e.target.value)}
+                    placeholder={apiKeyStatus === "configured" ? "Key is set — paste a new one to replace" : "sk-ant-…"}
+                    className="font-mono text-sm pr-10"
+                    onKeyDown={(e) => e.key === "Enter" && handleSaveApiKey()}
+                  />
+                  <button
+                    type="button"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    onClick={() => setShowKey((v) => !v)}
+                  >
+                    {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                <Button onClick={handleSaveApiKey} disabled={savingKey || !apiKey.trim()} className="w-24">
+                  {savingKey ? "Saving…" : "Save Key"}
+                </Button>
+                {apiKeyStatus === "configured" && (
+                  <Button variant="ghost" onClick={async () => {
+                    setSavingKey(true);
+                    try {
+                      await fetch("/file-finder/ai-config", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ api_key: "" }) });
+                      setApiKeyStatus("missing");
+                      setApiKey("");
+                      toast({ title: "API Key Cleared" });
+                    } finally { setSavingKey(false); }
+                  }} disabled={savingKey} className="text-destructive hover:text-destructive">
+                    Clear
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
 
           <Card>
             <CardHeader>

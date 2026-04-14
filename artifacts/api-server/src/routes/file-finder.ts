@@ -16,16 +16,21 @@ const router: IRouter = Router();
 const execAsync = promisify(exec);
 
 const ROOT_DIR = process.env.ROOT_DIR || process.cwd();
-const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 
 const VALID_MODELS = ["claude-haiku-4-5", "claude-sonnet-4-5"];
 const DEFAULT_MODEL = "claude-haiku-4-5";
 
+let runtimeApiKey: string | null = null;
 let isIndexingRunning = false;
 
+function getActiveApiKey(): string | null {
+  return runtimeApiKey || process.env.ANTHROPIC_API_KEY || null;
+}
+
 function getAnthropicClient() {
-  if (!ANTHROPIC_API_KEY) return null;
-  return new Anthropic({ apiKey: ANTHROPIC_API_KEY });
+  const key = getActiveApiKey();
+  if (!key) return null;
+  return new Anthropic({ apiKey: key });
 }
 
 function resolveModel(requested?: string | null): string {
@@ -186,6 +191,23 @@ async function runIndexing(rootDir: string, jobId: number) {
     isIndexingRunning = false;
   }
 }
+
+router.get("/file-finder/ai-config", (_req: Request, res: Response) => {
+  const envKeySet = !!process.env.ANTHROPIC_API_KEY;
+  const runtimeKeySet = !!runtimeApiKey;
+  res.json({ configured: envKeySet || runtimeKeySet, source: runtimeKeySet ? "runtime" : (envKeySet ? "env" : "none") });
+});
+
+router.post("/file-finder/ai-config", (req: Request, res: Response) => {
+  const { api_key } = req.body as { api_key?: string };
+  if (api_key && api_key.trim()) {
+    runtimeApiKey = api_key.trim();
+    res.json({ ok: true, message: "API key saved for this session." });
+  } else {
+    runtimeApiKey = null;
+    res.json({ ok: true, message: "API key cleared." });
+  }
+});
 
 router.get("/file-finder/search", async (req: Request, res: Response) => {
   try {
