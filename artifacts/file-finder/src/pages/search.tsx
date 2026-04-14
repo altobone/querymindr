@@ -4,7 +4,7 @@ import { formatBytes, formatDate, cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Search, Sparkles, Folder, FileText, Calendar, HardDrive, File as FileIcon, X, Maximize2, MoreHorizontal, TerminalSquare, Copy, Filter } from "lucide-react";
+import { Search, Sparkles, Folder, FileText, Calendar, HardDrive, File as FileIcon, X, Maximize2, MoreHorizontal, TerminalSquare, Copy, Filter, Loader2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
@@ -37,7 +37,7 @@ export default function SearchPage() {
   const moreLikeThis = useMoreLikeThis();
   const aiSearch = useAiSearchFiles();
 
-  const { data: searchResults, isLoading: isSearchLoading, refetch: refetchSearch } = useSearchFiles({
+  const { data: searchResults, isFetching: isSearchLoading, refetch: refetchSearch } = useSearchFiles({
     query: isAiSearch ? undefined : query,
     folder_scope: folderScope !== "all" ? folderScope : undefined,
     sort_by: sortBy,
@@ -162,8 +162,12 @@ export default function SearchPage() {
                 ))}
               </SelectContent>
             </Select>
-            <Button onClick={handleSearch} disabled={isLoading} className="h-10 px-6">
-              {isLoading ? "Searching..." : "Search"}
+            <Button onClick={handleSearch} disabled={isLoading} className="h-10 px-6 gap-2">
+              {isLoading ? (
+                <><Loader2 className="w-4 h-4 animate-spin" />Searching...</>
+              ) : (
+                <><Search className="w-4 h-4" />Search</>
+              )}
             </Button>
           </div>
 
