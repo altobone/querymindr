@@ -41,6 +41,12 @@ db.exec(`
     error_message   TEXT,
     created_at      TEXT DEFAULT (datetime('now'))
   );
+
+  CREATE INDEX IF NOT EXISTS idx_file_index_checksum  ON file_index (checksum);
+  CREATE INDEX IF NOT EXISTS idx_file_index_name      ON file_index (name);
+  CREATE INDEX IF NOT EXISTS idx_file_index_extension ON file_index (extension);
+  CREATE INDEX IF NOT EXISTS idx_file_index_folder    ON file_index (folder);
+  CREATE INDEX IF NOT EXISTS idx_file_index_size      ON file_index (size_bytes);
 `);
 
 export interface FileRow {

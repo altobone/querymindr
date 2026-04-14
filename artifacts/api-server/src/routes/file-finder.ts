@@ -400,19 +400,39 @@ router.post("/file-finder/open", async (req: Request, res: Response) => {
 router.get("/file-finder/duplicates", async (req: Request, res: Response) => {
   try {
     const { folder_scope } = req.query as Record<string, string>;
-    const where = folder_scope ? "WHERE checksum IS NOT NULL AND folder LIKE ?" : "WHERE checksum IS NOT NULL";
-    const params = folder_scope ? [`${folder_scope}%`] : [];
+    const folderFilter = folder_scope ? "AND fi.folder LIKE ?" : "";
+    const params: unknown[] = folder_scope ? [`${folder_scope}%`] : [];
 
-    const groups = db.prepare(`SELECT checksum, COUNT(*) as count, SUM(size_bytes) as total_size FROM file_index ${where} GROUP BY checksum HAVING COUNT(*) > 1`).all(...params) as { checksum: string; count: number; total_size: number }[];
+    // Single query: join each file against the set of duplicate checksums
+    const rows = db.prepare(`
+      SELECT fi.*
+      FROM file_index fi
+      INNER JOIN (
+        SELECT checksum
+        FROM file_index
+        WHERE checksum IS NOT NULL
+        GROUP BY checksum
+        HAVING COUNT(*) > 1
+      ) dups ON fi.checksum = dups.checksum
+      WHERE fi.checksum IS NOT NULL ${folderFilter}
+      ORDER BY fi.checksum, fi.size_bytes DESC
+      LIMIT 5000
+    `).all(...params) as FileRow[];
+
+    // Group rows by checksum in JS
+    const groupMap = new Map<string, FileRow[]>();
+    for (const row of rows) {
+      const key = row.checksum!;
+      if (!groupMap.has(key)) groupMap.set(key, []);
+      groupMap.get(key)!.push(row);
+    }
 
     let totalWastedBytes = 0;
     const result = [];
-
-    for (const group of groups) {
-      const files = db.prepare("SELECT * FROM file_index WHERE checksum = ?").all(group.checksum) as FileRow[];
+    for (const [checksum, files] of groupMap) {
       const wastedBytes = (files[0]?.size_bytes ?? 0) * (files.length - 1);
       totalWastedBytes += wastedBytes;
-      result.push({ checksum: group.checksum, files: files.map(formatFileResult), wasted_bytes: wastedBytes });
+      result.push({ checksum, files: files.map(formatFileResult), wasted_bytes: wastedBytes });
     }
 
     result.sort((a, b) => b.wasted_bytes - a.wasted_bytes);
