@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useFindDuplicates, useOpenInFinder } from "@workspace/api-client-react";
-import { formatBytes } from "@/lib/utils";
+import { formatBytes, formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -32,7 +32,13 @@ export default function DuplicatesPage() {
     return allGroups
       .map(group => ({
         ...group,
-        files: group.files.filter(f => !deletedPaths.has(f.path)),
+        files: group.files
+          .filter(f => !deletedPaths.has(f.path))
+          .sort((a, b) => {
+            const da = a.created_at ? new Date(a.created_at).getTime() : 0;
+            const db_ = b.created_at ? new Date(b.created_at).getTime() : 0;
+            return db_ - da;
+          }),
       }))
       .filter(group => group.files.length > 1)
       .filter(group => {
@@ -200,7 +206,7 @@ export default function DuplicatesPage() {
                     className="shrink-0"
                   >
                     <Trash2 className="w-3.5 h-3.5 mr-1.5" />
-                    Delete {copies.length} {copies.length === 1 ? "Copy" : "Copies"}
+                    Keep Newest · Delete {copies.length} Older
                   </Button>
                 </div>
 
@@ -208,14 +214,19 @@ export default function DuplicatesPage() {
                   {group.files.map((file, fileIndex) => (
                     <div key={file.id} className="p-4 flex items-start gap-3 hover:bg-secondary/20 transition-colors">
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2 mb-1.5">
+                        <div className="flex items-center gap-2 mb-1.5 flex-wrap">
                           {fileIndex === 0 ? (
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/10 px-1.5 py-0.5 rounded shrink-0">Original</span>
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/10 px-1.5 py-0.5 rounded shrink-0">Newest</span>
                           ) : (
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground bg-secondary px-1.5 py-0.5 rounded shrink-0">Copy</span>
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground bg-secondary px-1.5 py-0.5 rounded shrink-0">Older</span>
                           )}
                           <p className="text-sm font-medium truncate">{file.name}</p>
                           <span className="text-xs text-muted-foreground shrink-0">{formatBytes(file.size_bytes)}</span>
+                          {file.created_at && (
+                            <span className="text-xs text-muted-foreground shrink-0 bg-secondary/60 px-1.5 py-0.5 rounded">
+                              Created {formatDate(file.created_at)}
+                            </span>
+                          )}
                         </div>
                         <p className="text-xs text-muted-foreground font-mono break-all bg-secondary/50 px-2 py-1.5 rounded leading-relaxed">
                           {file.path}
