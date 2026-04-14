@@ -15,7 +15,6 @@
     "@workspace/db": "workspace:*",
     "cookie-parser": "^1.4.7",
     "cors": "^2",
-    "drizzle-orm": "catalog:",
     "express": "^5",
     "fast-glob": "^3.3.3",
     "fuse.js": "^7.3.0",
