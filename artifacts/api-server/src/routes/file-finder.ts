@@ -146,44 +146,43 @@ async function runIndexing(rootDir: string, jobId: number) {
     for (let i = 0; i < entries.length; i += batchSize) {
       const batch = entries.slice(i, i + batchSize);
 
-      db.exec("BEGIN");
-      try {
-        for (const filePath of batch) {
-          try {
-            const stat = fs.statSync(filePath);
-            if (!stat.isFile()) { processed++; continue; }
-
-            const ext = path.extname(filePath).toLowerCase();
-            const name = path.basename(filePath);
-            const folder = path.dirname(filePath);
-
-            let checksum: string | null = null;
-            try {
-              if (stat.size < 100 * 1024 * 1024) checksum = crypto.createHash("sha256").update(fs.readFileSync(filePath)).digest("hex");
-            } catch { }
-
-            upsert.run(filePath, name, ext || "(no extension)", stat.size, stat.mtime.toISOString(), (stat.birthtime || stat.mtime).toISOString(), folder, null, checksum);
-          } catch { }
-          processed++;
-        }
-        db.exec("COMMIT");
-      } catch (txErr) {
-        db.exec("ROLLBACK");
-        throw txErr;
-      }
-
-      // Content extraction done separately (async) — update after batch
+      // Process each file individually so progress updates are frequent
       for (const filePath of batch) {
         try {
+          const stat = fs.statSync(filePath);
+          if (!stat.isFile()) { processed++; continue; }
+
           const ext = path.extname(filePath).toLowerCase();
-          const content = await extractTextContent(filePath, ext);
-          if (content) {
-            db.prepare("UPDATE file_index SET content_text = ? WHERE path = ?").run(content, filePath);
+          const name = path.basename(filePath);
+          const folder = path.dirname(filePath);
+
+          // Only checksum small files (≤10 MB) to avoid blocking on large audio/video
+          let checksum: string | null = null;
+          try {
+            if (stat.size <= 10 * 1024 * 1024) {
+              checksum = await computeChecksum(filePath);
+            }
+          } catch { }
+
+          // Extract text content for supported types
+          let content: string | null = null;
+          try {
+            content = await extractTextContent(filePath, ext);
+          } catch { }
+
+          db.exec("BEGIN");
+          try {
+            upsert.run(filePath, name, ext || "(no extension)", stat.size, stat.mtime.toISOString(), (stat.birthtime || stat.mtime).toISOString(), folder, content, checksum);
+            db.exec("COMMIT");
+          } catch (txErr) {
+            db.exec("ROLLBACK");
           }
         } catch { }
-      }
 
-      db.prepare("UPDATE indexing_jobs SET processed_files = ? WHERE id = ?").run(processed, jobId);
+        processed++;
+        // Update progress after every file
+        db.prepare("UPDATE indexing_jobs SET processed_files = ? WHERE id = ?").run(processed, jobId);
+      }
     }
 
     db.prepare("UPDATE indexing_jobs SET status = 'completed', completed_at = ?, processed_files = ? WHERE id = ?").run(new Date().toISOString(), processed, jobId);
