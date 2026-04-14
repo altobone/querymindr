@@ -37,23 +37,30 @@ fi
 cd "$SCRIPT_DIR"
 
 # ---------------------------------------------------------------
-# Step 1: Build the frontend
+# Step 1: Install dependencies
 # ---------------------------------------------------------------
-echo "1/4  Building frontend..."
+echo "1/5  Installing dependencies (this takes a few minutes the first time)..."
+"$PNPM_BIN" install --filter @workspace/file-finder... --filter @workspace/api-server...
+echo "     Dependencies ready."
+
+# ---------------------------------------------------------------
+# Step 2: Build the frontend
+# ---------------------------------------------------------------
+echo "2/5  Building frontend..."
 NODE_ENV=production BASE_PATH=/file-finder/ "$PNPM_BIN" --filter @workspace/file-finder run build
 echo "     Frontend built."
 
 # ---------------------------------------------------------------
-# Step 2: Build the backend
+# Step 3: Build the backend
 # ---------------------------------------------------------------
-echo "2/4  Building server..."
+echo "3/5  Building server..."
 "$PNPM_BIN" --filter @workspace/api-server run build
 echo "     Server built."
 
 # ---------------------------------------------------------------
-# Step 3: Copy everything to the permanent install directory
+# Step 4: Copy everything to the permanent install directory
 # ---------------------------------------------------------------
-echo "3/4  Installing to $INSTALL_DIR..."
+echo "4/5  Installing to $INSTALL_DIR..."
 mkdir -p "$INSTALL_DIR"
 
 # Copy server dist
@@ -68,7 +75,7 @@ echo "     Files installed."
 # ---------------------------------------------------------------
 # Step 4: Install macOS launch agent (auto-start at login)
 # ---------------------------------------------------------------
-echo "4/4  Installing launch agent..."
+echo "5/5  Installing launch agent..."
 
 # Stop existing service if running
 launchctl unload "$PLIST_FILE" 2>/dev/null || true
