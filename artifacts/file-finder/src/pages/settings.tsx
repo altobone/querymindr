@@ -27,7 +27,7 @@ export default function SettingsPage() {
   const { toast } = useToast();
 
   useEffect(() => {
-    fetch("/file-finder/ai-config")
+    fetch("/api/file-finder/ai-config")
       .then((r) => r.json())
       .then((d: { configured: boolean }) => setApiKeyStatus(d.configured ? "configured" : "missing"))
       .catch(() => setApiKeyStatus("missing"));
@@ -36,7 +36,7 @@ export default function SettingsPage() {
   const handleSaveApiKey = async () => {
     setSavingKey(true);
     try {
-      const res = await fetch("/file-finder/ai-config", {
+      const res = await fetch("/api/file-finder/ai-config", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ api_key: apiKey }),
@@ -140,7 +140,7 @@ export default function SettingsPage() {
                   <Button variant="ghost" onClick={async () => {
                     setSavingKey(true);
                     try {
-                      await fetch("/file-finder/ai-config", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ api_key: "" }) });
+                      await fetch("/api/file-finder/ai-config", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ api_key: "" }) });
                       setApiKeyStatus("missing");
                       setApiKey("");
                       toast({ title: "API Key Cleared" });
