@@ -146,7 +146,8 @@ async function runIndexing(rootDir: string, jobId: number) {
     for (let i = 0; i < entries.length; i += batchSize) {
       const batch = entries.slice(i, i + batchSize);
 
-      const insertBatch = db.transaction(() => {
+      db.exec("BEGIN");
+      try {
         for (const filePath of batch) {
           try {
             const stat = fs.statSync(filePath);
@@ -165,9 +166,11 @@ async function runIndexing(rootDir: string, jobId: number) {
           } catch { }
           processed++;
         }
-      });
-
-      insertBatch();
+        db.exec("COMMIT");
+      } catch (txErr) {
+        db.exec("ROLLBACK");
+        throw txErr;
+      }
 
       // Content extraction done separately (async) — update after batch
       for (const filePath of batch) {
