@@ -5,18 +5,38 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import type {
+  MutationFunction,
   QueryFunction,
   QueryKey,
+  UseMutationOptions,
+  UseMutationResult,
   UseQueryOptions,
   UseQueryResult,
 } from "@tanstack/react-query";
 
-import type { HealthStatus } from "./api.schemas";
+import type {
+  AiSearchRequest,
+  AiSearchResults,
+  AiSummarizeRequest,
+  AiSummarizeResponse,
+  DuplicatesResults,
+  FindDuplicatesParams,
+  FolderList,
+  HealthStatus,
+  IndexStats,
+  IndexStatus,
+  MoreLikeThisRequest,
+  OpenFileRequest,
+  SearchFilesParams,
+  SearchResults,
+  SimpleResponse,
+  StartIndexRequest,
+} from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
-import type { ErrorType } from "../custom-fetch";
+import type { ErrorType, BodyType } from "../custom-fetch";
 
 type AwaitedInput<T> = PromiseLike<T> | T;
 
@@ -25,7 +45,6 @@ type Awaited<O> = O extends AwaitedInput<infer T> ? T : never;
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 /**
- * Returns server health status
  * @summary Health check
  */
 export const getHealthCheckUrl = () => {
@@ -92,6 +111,849 @@ export function useHealthCheck<
   request?: SecondParameter<typeof customFetch>;
 }): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getHealthCheckQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Search files with filters
+ */
+export const getSearchFilesUrl = (params?: SearchFilesParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/file-finder/search?${stringifiedParams}`
+    : `/api/file-finder/search`;
+};
+
+export const searchFiles = async (
+  params?: SearchFilesParams,
+  options?: RequestInit,
+): Promise<SearchResults> => {
+  return customFetch<SearchResults>(getSearchFilesUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getSearchFilesQueryKey = (params?: SearchFilesParams) => {
+  return [`/api/file-finder/search`, ...(params ? [params] : [])] as const;
+};
+
+export const getSearchFilesQueryOptions = <
+  TData = Awaited<ReturnType<typeof searchFiles>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: SearchFilesParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof searchFiles>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getSearchFilesQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof searchFiles>>> = ({
+    signal,
+  }) => searchFiles(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof searchFiles>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type SearchFilesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof searchFiles>>
+>;
+export type SearchFilesQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Search files with filters
+ */
+
+export function useSearchFiles<
+  TData = Awaited<ReturnType<typeof searchFiles>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: SearchFilesParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof searchFiles>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getSearchFilesQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Natural language AI-powered file search
+ */
+export const getAiSearchFilesUrl = () => {
+  return `/api/file-finder/ai-search`;
+};
+
+export const aiSearchFiles = async (
+  aiSearchRequest: AiSearchRequest,
+  options?: RequestInit,
+): Promise<AiSearchResults> => {
+  return customFetch<AiSearchResults>(getAiSearchFilesUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(aiSearchRequest),
+  });
+};
+
+export const getAiSearchFilesMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof aiSearchFiles>>,
+    TError,
+    { data: BodyType<AiSearchRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof aiSearchFiles>>,
+  TError,
+  { data: BodyType<AiSearchRequest> },
+  TContext
+> => {
+  const mutationKey = ["aiSearchFiles"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof aiSearchFiles>>,
+    { data: BodyType<AiSearchRequest> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return aiSearchFiles(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AiSearchFilesMutationResult = NonNullable<
+  Awaited<ReturnType<typeof aiSearchFiles>>
+>;
+export type AiSearchFilesMutationBody = BodyType<AiSearchRequest>;
+export type AiSearchFilesMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Natural language AI-powered file search
+ */
+export const useAiSearchFiles = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof aiSearchFiles>>,
+    TError,
+    { data: BodyType<AiSearchRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof aiSearchFiles>>,
+  TError,
+  { data: BodyType<AiSearchRequest> },
+  TContext
+> => {
+  return useMutation(getAiSearchFilesMutationOptions(options));
+};
+
+/**
+ * @summary Generate AI summary for a file
+ */
+export const getAiSummarizeFileUrl = () => {
+  return `/api/file-finder/ai-summarize`;
+};
+
+export const aiSummarizeFile = async (
+  aiSummarizeRequest: AiSummarizeRequest,
+  options?: RequestInit,
+): Promise<AiSummarizeResponse> => {
+  return customFetch<AiSummarizeResponse>(getAiSummarizeFileUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(aiSummarizeRequest),
+  });
+};
+
+export const getAiSummarizeFileMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof aiSummarizeFile>>,
+    TError,
+    { data: BodyType<AiSummarizeRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof aiSummarizeFile>>,
+  TError,
+  { data: BodyType<AiSummarizeRequest> },
+  TContext
+> => {
+  const mutationKey = ["aiSummarizeFile"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof aiSummarizeFile>>,
+    { data: BodyType<AiSummarizeRequest> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return aiSummarizeFile(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AiSummarizeFileMutationResult = NonNullable<
+  Awaited<ReturnType<typeof aiSummarizeFile>>
+>;
+export type AiSummarizeFileMutationBody = BodyType<AiSummarizeRequest>;
+export type AiSummarizeFileMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Generate AI summary for a file
+ */
+export const useAiSummarizeFile = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof aiSummarizeFile>>,
+    TError,
+    { data: BodyType<AiSummarizeRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof aiSummarizeFile>>,
+  TError,
+  { data: BodyType<AiSummarizeRequest> },
+  TContext
+> => {
+  return useMutation(getAiSummarizeFileMutationOptions(options));
+};
+
+/**
+ * @summary Find files similar to a given file
+ */
+export const getMoreLikeThisUrl = () => {
+  return `/api/file-finder/more-like-this`;
+};
+
+export const moreLikeThis = async (
+  moreLikeThisRequest: MoreLikeThisRequest,
+  options?: RequestInit,
+): Promise<SearchResults> => {
+  return customFetch<SearchResults>(getMoreLikeThisUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(moreLikeThisRequest),
+  });
+};
+
+export const getMoreLikeThisMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof moreLikeThis>>,
+    TError,
+    { data: BodyType<MoreLikeThisRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof moreLikeThis>>,
+  TError,
+  { data: BodyType<MoreLikeThisRequest> },
+  TContext
+> => {
+  const mutationKey = ["moreLikeThis"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof moreLikeThis>>,
+    { data: BodyType<MoreLikeThisRequest> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return moreLikeThis(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type MoreLikeThisMutationResult = NonNullable<
+  Awaited<ReturnType<typeof moreLikeThis>>
+>;
+export type MoreLikeThisMutationBody = BodyType<MoreLikeThisRequest>;
+export type MoreLikeThisMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Find files similar to a given file
+ */
+export const useMoreLikeThis = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof moreLikeThis>>,
+    TError,
+    { data: BodyType<MoreLikeThisRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof moreLikeThis>>,
+  TError,
+  { data: BodyType<MoreLikeThisRequest> },
+  TContext
+> => {
+  return useMutation(getMoreLikeThisMutationOptions(options));
+};
+
+/**
+ * @summary Reveal file in macOS Finder
+ */
+export const getOpenInFinderUrl = () => {
+  return `/api/file-finder/open`;
+};
+
+export const openInFinder = async (
+  openFileRequest: OpenFileRequest,
+  options?: RequestInit,
+): Promise<SimpleResponse> => {
+  return customFetch<SimpleResponse>(getOpenInFinderUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(openFileRequest),
+  });
+};
+
+export const getOpenInFinderMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof openInFinder>>,
+    TError,
+    { data: BodyType<OpenFileRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof openInFinder>>,
+  TError,
+  { data: BodyType<OpenFileRequest> },
+  TContext
+> => {
+  const mutationKey = ["openInFinder"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof openInFinder>>,
+    { data: BodyType<OpenFileRequest> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return openInFinder(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type OpenInFinderMutationResult = NonNullable<
+  Awaited<ReturnType<typeof openInFinder>>
+>;
+export type OpenInFinderMutationBody = BodyType<OpenFileRequest>;
+export type OpenInFinderMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Reveal file in macOS Finder
+ */
+export const useOpenInFinder = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof openInFinder>>,
+    TError,
+    { data: BodyType<OpenFileRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof openInFinder>>,
+  TError,
+  { data: BodyType<OpenFileRequest> },
+  TContext
+> => {
+  return useMutation(getOpenInFinderMutationOptions(options));
+};
+
+/**
+ * @summary Find duplicate files by content hash
+ */
+export const getFindDuplicatesUrl = (params?: FindDuplicatesParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/file-finder/duplicates?${stringifiedParams}`
+    : `/api/file-finder/duplicates`;
+};
+
+export const findDuplicates = async (
+  params?: FindDuplicatesParams,
+  options?: RequestInit,
+): Promise<DuplicatesResults> => {
+  return customFetch<DuplicatesResults>(getFindDuplicatesUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getFindDuplicatesQueryKey = (params?: FindDuplicatesParams) => {
+  return [`/api/file-finder/duplicates`, ...(params ? [params] : [])] as const;
+};
+
+export const getFindDuplicatesQueryOptions = <
+  TData = Awaited<ReturnType<typeof findDuplicates>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: FindDuplicatesParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof findDuplicates>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getFindDuplicatesQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof findDuplicates>>> = ({
+    signal,
+  }) => findDuplicates(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof findDuplicates>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type FindDuplicatesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof findDuplicates>>
+>;
+export type FindDuplicatesQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Find duplicate files by content hash
+ */
+
+export function useFindDuplicates<
+  TData = Awaited<ReturnType<typeof findDuplicates>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: FindDuplicatesParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof findDuplicates>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getFindDuplicatesQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Start background file indexing
+ */
+export const getStartIndexingUrl = () => {
+  return `/api/file-finder/index/start`;
+};
+
+export const startIndexing = async (
+  startIndexRequest: StartIndexRequest,
+  options?: RequestInit,
+): Promise<IndexStatus> => {
+  return customFetch<IndexStatus>(getStartIndexingUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(startIndexRequest),
+  });
+};
+
+export const getStartIndexingMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof startIndexing>>,
+    TError,
+    { data: BodyType<StartIndexRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof startIndexing>>,
+  TError,
+  { data: BodyType<StartIndexRequest> },
+  TContext
+> => {
+  const mutationKey = ["startIndexing"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof startIndexing>>,
+    { data: BodyType<StartIndexRequest> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return startIndexing(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type StartIndexingMutationResult = NonNullable<
+  Awaited<ReturnType<typeof startIndexing>>
+>;
+export type StartIndexingMutationBody = BodyType<StartIndexRequest>;
+export type StartIndexingMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Start background file indexing
+ */
+export const useStartIndexing = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof startIndexing>>,
+    TError,
+    { data: BodyType<StartIndexRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof startIndexing>>,
+  TError,
+  { data: BodyType<StartIndexRequest> },
+  TContext
+> => {
+  return useMutation(getStartIndexingMutationOptions(options));
+};
+
+/**
+ * @summary Get current indexing status
+ */
+export const getGetIndexStatusUrl = () => {
+  return `/api/file-finder/index/status`;
+};
+
+export const getIndexStatus = async (
+  options?: RequestInit,
+): Promise<IndexStatus> => {
+  return customFetch<IndexStatus>(getGetIndexStatusUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetIndexStatusQueryKey = () => {
+  return [`/api/file-finder/index/status`] as const;
+};
+
+export const getGetIndexStatusQueryOptions = <
+  TData = Awaited<ReturnType<typeof getIndexStatus>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getIndexStatus>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetIndexStatusQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getIndexStatus>>> = ({
+    signal,
+  }) => getIndexStatus({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getIndexStatus>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetIndexStatusQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getIndexStatus>>
+>;
+export type GetIndexStatusQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get current indexing status
+ */
+
+export function useGetIndexStatus<
+  TData = Awaited<ReturnType<typeof getIndexStatus>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getIndexStatus>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetIndexStatusQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get top-level folder list for scope selection
+ */
+export const getGetFoldersUrl = () => {
+  return `/api/file-finder/folders`;
+};
+
+export const getFolders = async (
+  options?: RequestInit,
+): Promise<FolderList> => {
+  return customFetch<FolderList>(getGetFoldersUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetFoldersQueryKey = () => {
+  return [`/api/file-finder/folders`] as const;
+};
+
+export const getGetFoldersQueryOptions = <
+  TData = Awaited<ReturnType<typeof getFolders>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getFolders>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetFoldersQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getFolders>>> = ({
+    signal,
+  }) => getFolders({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getFolders>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetFoldersQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getFolders>>
+>;
+export type GetFoldersQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get top-level folder list for scope selection
+ */
+
+export function useGetFolders<
+  TData = Awaited<ReturnType<typeof getFolders>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getFolders>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetFoldersQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get index statistics
+ */
+export const getGetIndexStatsUrl = () => {
+  return `/api/file-finder/stats`;
+};
+
+export const getIndexStats = async (
+  options?: RequestInit,
+): Promise<IndexStats> => {
+  return customFetch<IndexStats>(getGetIndexStatsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetIndexStatsQueryKey = () => {
+  return [`/api/file-finder/stats`] as const;
+};
+
+export const getGetIndexStatsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getIndexStats>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getIndexStats>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetIndexStatsQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getIndexStats>>> = ({
+    signal,
+  }) => getIndexStats({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getIndexStats>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetIndexStatsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getIndexStats>>
+>;
+export type GetIndexStatsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get index statistics
+ */
+
+export function useGetIndexStats<
+  TData = Awaited<ReturnType<typeof getIndexStats>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getIndexStats>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetIndexStatsQueryOptions(options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

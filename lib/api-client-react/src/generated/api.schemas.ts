@@ -8,3 +8,150 @@
 export interface HealthStatus {
   status: string;
 }
+
+export interface FileResult {
+  id: number;
+  path: string;
+  name: string;
+  extension: string;
+  size_bytes: number;
+  modified_at: string;
+  created_at: string;
+  folder: string;
+  ai_summary?: string | null;
+  checksum?: string | null;
+}
+
+export interface SearchResults {
+  files: FileResult[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export interface AiSearchRequest {
+  description: string;
+  folder_scope?: string | null;
+}
+
+export interface AiSearchResults {
+  files: FileResult[];
+  explanation: string;
+  total: number;
+}
+
+export interface AiSummarizeRequest {
+  file_id: number;
+}
+
+export interface AiSummarizeResponse {
+  summary: string;
+  file_id: number;
+}
+
+export interface MoreLikeThisRequest {
+  file_id: number;
+  limit?: number;
+}
+
+export interface OpenFileRequest {
+  path: string;
+}
+
+export interface StartIndexRequest {
+  root_dir: string;
+}
+
+export type IndexStatusStatus =
+  (typeof IndexStatusStatus)[keyof typeof IndexStatusStatus];
+
+export const IndexStatusStatus = {
+  idle: "idle",
+  running: "running",
+  completed: "completed",
+  failed: "failed",
+} as const;
+
+export interface IndexStatus {
+  status: IndexStatusStatus;
+  root_dir?: string | null;
+  total_files: number;
+  processed_files: number;
+  started_at?: string | null;
+  completed_at?: string | null;
+  error_message?: string | null;
+}
+
+export interface FolderList {
+  folders: string[];
+  root_dir: string;
+}
+
+export interface FileTypeCount {
+  extension: string;
+  count: number;
+  total_size_bytes: number;
+}
+
+export interface IndexStats {
+  total_files: number;
+  total_size_bytes: number;
+  file_types: FileTypeCount[];
+  last_indexed?: string | null;
+  root_dir?: string | null;
+}
+
+export interface DuplicateGroup {
+  checksum: string;
+  files: FileResult[];
+  wasted_bytes: number;
+}
+
+export interface DuplicatesResults {
+  groups: DuplicateGroup[];
+  total_wasted_bytes: number;
+}
+
+export interface SimpleResponse {
+  success: boolean;
+  message?: string;
+}
+
+export type SearchFilesParams = {
+  query?: string;
+  /**
+   * Comma-separated list of file extensions (e.g. mp4,mov,jpg)
+   */
+  types?: string;
+  date_from?: string;
+  date_to?: string;
+  size_min?: number;
+  size_max?: number;
+  folder_scope?: string;
+  sort_by?: SearchFilesSortBy;
+  sort_order?: SearchFilesSortOrder;
+  page?: number;
+  limit?: number;
+};
+
+export type SearchFilesSortBy =
+  (typeof SearchFilesSortBy)[keyof typeof SearchFilesSortBy];
+
+export const SearchFilesSortBy = {
+  name: "name",
+  date: "date",
+  size: "size",
+  type: "type",
+} as const;
+
+export type SearchFilesSortOrder =
+  (typeof SearchFilesSortOrder)[keyof typeof SearchFilesSortOrder];
+
+export const SearchFilesSortOrder = {
+  asc: "asc",
+  desc: "desc",
+} as const;
+
+export type FindDuplicatesParams = {
+  folder_scope?: string;
+};

@@ -1,0 +1,416 @@
+import { useState, useEffect } from "react";
+import { useSearchFiles, useAiSearchFiles, useAiSummarizeFile, useMoreLikeThis, useOpenInFinder, useGetFolders } from "@workspace/api-client-react";
+import { formatBytes, formatDate, cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Search, Sparkles, Folder, FileText, Calendar, HardDrive, File as FileIcon, X, Maximize2, MoreHorizontal, TerminalSquare, Copy, Filter } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import type { FileResult, SearchFilesSortBy, SearchFilesSortOrder } from "@workspace/api-client-react/src/generated/api.schemas";
+
+export default function SearchPage() {
+  const [query, setQuery] = useState("");
+  const [isAiSearch, setIsAiSearch] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<FileResult | null>(null);
+  
+  // Filters
+  const [folderScope, setFolderScope] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<SearchFilesSortBy>("date");
+  const [sortOrder, setSortOrder] = useState<SearchFilesSortOrder>("desc");
+  const [fileTypes, setFileTypes] = useState<string>("");
+  const [sizeMin, setSizeMin] = useState<string>("");
+  const [sizeMax, setSizeMax] = useState<string>("");
+
+  const { data: foldersData } = useGetFolders();
+  const { toast } = useToast();
+
+  const openFinder = useOpenInFinder();
+  const summarizeFile = useAiSummarizeFile();
+  const moreLikeThis = useMoreLikeThis();
+  const aiSearch = useAiSearchFiles();
+
+  const { data: searchResults, isLoading: isSearchLoading, refetch: refetchSearch } = useSearchFiles({
+    query: isAiSearch ? undefined : query,
+    folder_scope: folderScope !== "all" ? folderScope : undefined,
+    sort_by: sortBy,
+    sort_order: sortOrder,
+    types: fileTypes || undefined,
+    size_min: sizeMin ? parseInt(sizeMin) : undefined,
+    size_max: sizeMax ? parseInt(sizeMax) : undefined,
+    limit: 50,
+  }, { query: { enabled: !isAiSearch && query.length > 0 } });
+
+  const [aiResults, setAiResults] = useState<FileResult[]>([]);
+  const [aiExplanation, setAiExplanation] = useState<string>("");
+  const [similarResults, setSimilarResults] = useState<FileResult[] | null>(null);
+
+  useEffect(() => {
+    if (!isAiSearch) {
+      setAiResults([]);
+      setAiExplanation("");
+    }
+  }, [isAiSearch]);
+
+  const handleSearch = () => {
+    setSimilarResults(null);
+    if (isAiSearch && query) {
+      aiSearch.mutate({
+        data: {
+          description: query,
+          folder_scope: folderScope !== "all" ? folderScope : undefined,
+        }
+      }, {
+        onSuccess: (data) => {
+          setAiResults(data.files);
+          setAiExplanation(data.explanation);
+        }
+      });
+    } else {
+      refetchSearch();
+    }
+  };
+
+  const handleOpenInFinder = (path: string) => {
+    openFinder.mutate({ data: { path } }, {
+      onSuccess: () => {
+        toast({ title: "Opened in Finder", description: path });
+      },
+      onError: () => {
+        toast({ title: "Failed to open", description: "Could not open file in Finder", variant: "destructive" });
+      }
+    });
+  };
+
+  const handleSummarize = (fileId: number) => {
+    summarizeFile.mutate({ data: { file_id: fileId } }, {
+      onSuccess: (data) => {
+        if (selectedFile?.id === fileId) {
+          setSelectedFile({ ...selectedFile, ai_summary: data.summary });
+        }
+      }
+    });
+  };
+
+  const handleMoreLikeThis = (fileId: number) => {
+    moreLikeThis.mutate({ data: { file_id: fileId, limit: 20 } }, {
+      onSuccess: (data) => {
+        setIsAiSearch(false);
+        // We'll hijack the search query field to show we are looking at similar files
+        setQuery(`Similar to file #${fileId}`);
+        // Instead of overriding the query cache which is complex, we can just store the similar results locally
+        // But since searchFiles hook manages data, a better way is to set local state for override
+        setSimilarResults(data.files);
+      }
+    });
+  };
+
+  const files = similarResults ? similarResults : (isAiSearch ? aiResults : (searchResults?.files || []));
+  const isLoading = isAiSearch ? aiSearch.isPending : (similarResults ? moreLikeThis.isPending : isSearchLoading);
+
+  return (
+    <div className="flex h-full w-full">
+      {/* Main List */}
+      <div className={cn("flex-1 flex flex-col h-full transition-all duration-300", selectedFile ? "mr-96" : "")}>
+        <div className="border-b border-border bg-card p-6 flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold tracking-tight">Search</h2>
+            <div className="flex items-center gap-3">
+              <Label htmlFor="ai-mode" className="text-sm font-medium flex items-center gap-2 cursor-pointer">
+                <Search className="w-4 h-4 text-muted-foreground" />
+                Standard
+              </Label>
+              <Switch
+                id="ai-mode"
+                checked={isAiSearch}
+                onCheckedChange={setIsAiSearch}
+              />
+              <Label htmlFor="ai-mode" className="text-sm font-medium flex items-center gap-2 cursor-pointer">
+                <Sparkles className="w-4 h-4 text-primary" />
+                AI Magic
+              </Label>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder={isAiSearch ? "Describe what you're looking for (e.g. 'tax documents from last year')" : "Search by filename..."}
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                className="pl-9 bg-background h-10 border-input"
+              />
+            </div>
+            <Select value={folderScope} onValueChange={setFolderScope}>
+              <SelectTrigger className="w-[200px] h-10">
+                <SelectValue placeholder="All folders" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All folders</SelectItem>
+                {foldersData?.folders.map(f => (
+                  <SelectItem key={f} value={f}>{f}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button onClick={handleSearch} disabled={isLoading} className="h-10 px-6">
+              {isLoading ? "Searching..." : "Search"}
+            </Button>
+          </div>
+
+          {!isAiSearch && (
+            <div className="flex items-center gap-4 text-sm">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-8 gap-2 border-dashed">
+                    <Filter className="w-3.5 h-3.5" />
+                    Filters
+                    {(fileTypes || sizeMin || sizeMax) && (
+                      <span className="w-2 h-2 rounded-full bg-primary ml-1" />
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80" align="start">
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <h4 className="font-medium text-sm leading-none">File Types</h4>
+                      <p className="text-xs text-muted-foreground">Comma separated (e.g. mp4,jpg,pdf)</p>
+                      <Input 
+                        placeholder="pdf, txt, md" 
+                        value={fileTypes} 
+                        onChange={e => setFileTypes(e.target.value)} 
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                    <Separator />
+                    <div className="space-y-2">
+                      <h4 className="font-medium text-sm leading-none">Size Range (Bytes)</h4>
+                      <div className="flex items-center gap-2">
+                        <Input 
+                          placeholder="Min" 
+                          type="number"
+                          value={sizeMin}
+                          onChange={e => setSizeMin(e.target.value)}
+                          className="h-8 text-sm"
+                        />
+                        <span className="text-muted-foreground">-</span>
+                        <Input 
+                          placeholder="Max" 
+                          type="number"
+                          value={sizeMax}
+                          onChange={e => setSizeMax(e.target.value)}
+                          className="h-8 text-sm"
+                        />
+                      </div>
+                    </div>
+                    <Button size="sm" className="w-full" onClick={() => { handleSearch(); }}>
+                      Apply Filters
+                    </Button>
+                  </div>
+                </PopoverContent>
+              </Popover>
+
+              <div className="flex items-center gap-2 ml-auto">
+                <span className="text-muted-foreground">Sort by:</span>
+                <Select value={sortBy} onValueChange={(v) => setSortBy(v as SearchFilesSortBy)}>
+                  <SelectTrigger className="h-8 w-[120px] text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="date">Date</SelectItem>
+                    <SelectItem value="name">Name</SelectItem>
+                    <SelectItem value="size">Size</SelectItem>
+                    <SelectItem value="type">Type</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-muted-foreground">Order:</span>
+                <Select value={sortOrder} onValueChange={(v) => setSortOrder(v as SearchFilesSortOrder)}>
+                  <SelectTrigger className="h-8 w-[120px] text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="desc">Descending</SelectItem>
+                    <SelectItem value="asc">Ascending</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+          
+          {aiExplanation && (
+            <div className="text-sm bg-primary/10 text-primary px-4 py-3 rounded-md border border-primary/20 flex gap-3 items-start">
+              <Sparkles className="w-4 h-4 mt-0.5 shrink-0" />
+              <p>{aiExplanation}</p>
+            </div>
+          )}
+        </div>
+
+        <ScrollArea className="flex-1 bg-background">
+          <div className="p-6">
+            {files.length === 0 && !isLoading && query && (
+              <div className="text-center py-20 text-muted-foreground">
+                No files found matching your query.
+              </div>
+            )}
+            
+            {files.length > 0 && (
+              <div className="space-y-1">
+                {files.map((file) => (
+                  <div
+                    key={file.id}
+                    onClick={() => setSelectedFile(file)}
+                    className={cn(
+                      "flex items-center justify-between p-3 rounded-lg cursor-pointer transition-colors border border-transparent",
+                      selectedFile?.id === file.id
+                        ? "bg-secondary border-border"
+                        : "hover:bg-secondary/50"
+                    )}
+                  >
+                    <div className="flex items-center gap-4 min-w-0 flex-1">
+                      <div className="w-10 h-10 rounded bg-card border flex items-center justify-center shrink-0 text-muted-foreground">
+                        <FileIcon className="w-5 h-5" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium truncate">{file.name}</p>
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
+                          <span className="truncate max-w-[200px]">{file.folder}</span>
+                          <span>&bull;</span>
+                          <span>{formatDate(file.modified_at)}</span>
+                          <span>&bull;</span>
+                          <span>{formatBytes(file.size_bytes)}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="shrink-0 pl-4">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenInFinder(file.path);
+                        }}
+                      >
+                        Reveal
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </ScrollArea>
+      </div>
+
+      {/* Preview Panel */}
+      <div className={cn(
+        "fixed top-0 right-0 w-96 h-full bg-card border-l border-border transform transition-transform duration-300 z-10 shadow-2xl",
+        selectedFile ? "translate-x-0" : "translate-x-full"
+      )}>
+        {selectedFile && (
+          <div className="h-full flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b border-border">
+              <h3 className="font-medium text-sm">File Details</h3>
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => setSelectedFile(null)}>
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+            
+            <ScrollArea className="flex-1">
+              <div className="p-6 space-y-8">
+                <div className="space-y-4">
+                  <div className="w-16 h-16 rounded-xl bg-secondary flex items-center justify-center border border-border">
+                    <FileIcon className="w-8 h-8 text-muted-foreground" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-semibold break-all leading-tight">{selectedFile.name}</h2>
+                    <p className="text-sm text-muted-foreground mt-1 uppercase tracking-wider">{selectedFile.extension} File</p>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-4 text-sm">
+                  <div className="grid grid-cols-3 gap-2">
+                    <span className="text-muted-foreground flex items-center gap-2"><HardDrive className="w-3.5 h-3.5" /> Size</span>
+                    <span className="col-span-2 font-medium">{formatBytes(selectedFile.size_bytes)}</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <span className="text-muted-foreground flex items-center gap-2"><Calendar className="w-3.5 h-3.5" /> Modified</span>
+                    <span className="col-span-2 font-medium">{formatDate(selectedFile.modified_at)}</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <span className="text-muted-foreground flex items-center gap-2"><Calendar className="w-3.5 h-3.5" /> Created</span>
+                    <span className="col-span-2 font-medium">{formatDate(selectedFile.created_at)}</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <span className="text-muted-foreground flex items-center gap-2"><Folder className="w-3.5 h-3.5" /> Path</span>
+                    <span className="col-span-2 font-mono text-xs break-all bg-secondary p-1.5 rounded">{selectedFile.path}</span>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-3">
+                  <h4 className="font-medium text-sm flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-primary" />
+                    AI Summary
+                  </h4>
+                  {selectedFile.ai_summary ? (
+                    <p className="text-sm text-muted-foreground leading-relaxed bg-secondary/50 p-3 rounded-md border border-border/50">
+                      {selectedFile.ai_summary}
+                    </p>
+                  ) : (
+                    <Button 
+                      variant="outline" 
+                      className="w-full justify-start text-muted-foreground h-auto py-3"
+                      onClick={() => handleSummarize(selectedFile.id)}
+                      disabled={summarizeFile.isPending}
+                    >
+                      <TerminalSquare className="w-4 h-4 mr-2" />
+                      {summarizeFile.isPending ? "Generating summary..." : "Generate AI Summary"}
+                    </Button>
+                  )}
+                </div>
+
+                <Separator />
+
+                <div className="space-y-3">
+                  <h4 className="font-medium text-sm flex items-center gap-2">
+                    <Search className="w-4 h-4 text-primary" />
+                    Similar Files
+                  </h4>
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start text-muted-foreground h-auto py-3"
+                    onClick={() => handleMoreLikeThis(selectedFile.id)}
+                    disabled={moreLikeThis.isPending}
+                  >
+                    <Copy className="w-4 h-4 mr-2" />
+                    {moreLikeThis.isPending ? "Finding similar files..." : "Find More Like This"}
+                  </Button>
+                </div>
+              </div>
+            </ScrollArea>
+            
+            <div className="p-4 border-t border-border bg-card/50 backdrop-blur space-y-2">
+              <Button 
+                className="w-full" 
+                onClick={() => handleOpenInFinder(selectedFile.path)}
+              >
+                <Maximize2 className="w-4 h-4 mr-2" />
+                Reveal in Finder
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

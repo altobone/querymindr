@@ -1,6 +1,5 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
   description: API specification
@@ -10,13 +9,14 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: file-finder
+    description: File Finder operations
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +24,224 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /file-finder/search:
+    get:
+      operationId: searchFiles
+      tags: [file-finder]
+      summary: Search files with filters
+      parameters:
+        - name: query
+          in: query
+          schema:
+            type: string
+        - name: types
+          in: query
+          schema:
+            type: string
+          description: Comma-separated list of file extensions (e.g. mp4,mov,jpg)
+        - name: date_from
+          in: query
+          schema:
+            type: string
+        - name: date_to
+          in: query
+          schema:
+            type: string
+        - name: size_min
+          in: query
+          schema:
+            type: integer
+        - name: size_max
+          in: query
+          schema:
+            type: integer
+        - name: folder_scope
+          in: query
+          schema:
+            type: string
+        - name: sort_by
+          in: query
+          schema:
+            type: string
+            enum: [name, date, size, type]
+            default: date
+        - name: sort_order
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        "200":
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SearchResults"
+
+  /file-finder/ai-search:
+    post:
+      operationId: aiSearchFiles
+      tags: [file-finder]
+      summary: Natural language AI-powered file search
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AiSearchRequest"
+      responses:
+        "200":
+          description: AI search results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiSearchResults"
+
+  /file-finder/ai-summarize:
+    post:
+      operationId: aiSummarizeFile
+      tags: [file-finder]
+      summary: Generate AI summary for a file
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AiSummarizeRequest"
+      responses:
+        "200":
+          description: AI summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiSummarizeResponse"
+
+  /file-finder/more-like-this:
+    post:
+      operationId: moreLikeThis
+      tags: [file-finder]
+      summary: Find files similar to a given file
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MoreLikeThisRequest"
+      responses:
+        "200":
+          description: Similar files
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SearchResults"
+
+  /file-finder/open:
+    post:
+      operationId: openInFinder
+      tags: [file-finder]
+      summary: Reveal file in macOS Finder
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OpenFileRequest"
+      responses:
+        "200":
+          description: File opened
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SimpleResponse"
+
+  /file-finder/duplicates:
+    get:
+      operationId: findDuplicates
+      tags: [file-finder]
+      summary: Find duplicate files by content hash
+      parameters:
+        - name: folder_scope
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Duplicate file groups
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DuplicatesResults"
+
+  /file-finder/index/start:
+    post:
+      operationId: startIndexing
+      tags: [file-finder]
+      summary: Start background file indexing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StartIndexRequest"
+      responses:
+        "200":
+          description: Indexing started
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IndexStatus"
+
+  /file-finder/index/status:
+    get:
+      operationId: getIndexStatus
+      tags: [file-finder]
+      summary: Get current indexing status
+      responses:
+        "200":
+          description: Index status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IndexStatus"
+
+  /file-finder/folders:
+    get:
+      operationId: getFolders
+      tags: [file-finder]
+      summary: Get top-level folder list for scope selection
+      responses:
+        "200":
+          description: Folder list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FolderList"
+
+  /file-finder/stats:
+    get:
+      operationId: getIndexStats
+      tags: [file-finder]
+      summary: Get index statistics
+      responses:
+        "200":
+          description: Index statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IndexStats"
+
 components:
   schemas:
     HealthStatus:
@@ -31,6 +249,207 @@ components:
       properties:
         status:
           type: string
-      required:
-        - status
+      required: [status]
 
+    FileResult:
+      type: object
+      properties:
+        id:
+          type: integer
+        path:
+          type: string
+        name:
+          type: string
+        extension:
+          type: string
+        size_bytes:
+          type: integer
+        modified_at:
+          type: string
+        created_at:
+          type: string
+        folder:
+          type: string
+        ai_summary:
+          type: string
+          nullable: true
+        checksum:
+          type: string
+          nullable: true
+      required: [id, path, name, extension, size_bytes, modified_at, created_at, folder]
+
+    SearchResults:
+      type: object
+      properties:
+        files:
+          type: array
+          items:
+            $ref: "#/components/schemas/FileResult"
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+      required: [files, total, page, limit]
+
+    AiSearchRequest:
+      type: object
+      properties:
+        description:
+          type: string
+        folder_scope:
+          type: string
+          nullable: true
+      required: [description]
+
+    AiSearchResults:
+      type: object
+      properties:
+        files:
+          type: array
+          items:
+            $ref: "#/components/schemas/FileResult"
+        explanation:
+          type: string
+        total:
+          type: integer
+      required: [files, explanation, total]
+
+    AiSummarizeRequest:
+      type: object
+      properties:
+        file_id:
+          type: integer
+      required: [file_id]
+
+    AiSummarizeResponse:
+      type: object
+      properties:
+        summary:
+          type: string
+        file_id:
+          type: integer
+      required: [summary, file_id]
+
+    MoreLikeThisRequest:
+      type: object
+      properties:
+        file_id:
+          type: integer
+        limit:
+          type: integer
+          default: 20
+      required: [file_id]
+
+    OpenFileRequest:
+      type: object
+      properties:
+        path:
+          type: string
+      required: [path]
+
+    StartIndexRequest:
+      type: object
+      properties:
+        root_dir:
+          type: string
+      required: [root_dir]
+
+    IndexStatus:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [idle, running, completed, failed]
+        root_dir:
+          type: string
+          nullable: true
+        total_files:
+          type: integer
+        processed_files:
+          type: integer
+        started_at:
+          type: string
+          nullable: true
+        completed_at:
+          type: string
+          nullable: true
+        error_message:
+          type: string
+          nullable: true
+      required: [status, total_files, processed_files]
+
+    FolderList:
+      type: object
+      properties:
+        folders:
+          type: array
+          items:
+            type: string
+        root_dir:
+          type: string
+      required: [folders, root_dir]
+
+    IndexStats:
+      type: object
+      properties:
+        total_files:
+          type: integer
+        total_size_bytes:
+          type: integer
+        file_types:
+          type: array
+          items:
+            $ref: "#/components/schemas/FileTypeCount"
+        last_indexed:
+          type: string
+          nullable: true
+        root_dir:
+          type: string
+          nullable: true
+      required: [total_files, total_size_bytes, file_types]
+
+    FileTypeCount:
+      type: object
+      properties:
+        extension:
+          type: string
+        count:
+          type: integer
+        total_size_bytes:
+          type: integer
+      required: [extension, count, total_size_bytes]
+
+    DuplicatesResults:
+      type: object
+      properties:
+        groups:
+          type: array
+          items:
+            $ref: "#/components/schemas/DuplicateGroup"
+        total_wasted_bytes:
+          type: integer
+      required: [groups, total_wasted_bytes]
+
+    DuplicateGroup:
+      type: object
+      properties:
+        checksum:
+          type: string
+        files:
+          type: array
+          items:
+            $ref: "#/components/schemas/FileResult"
+        wasted_bytes:
+          type: integer
+      required: [checksum, files, wasted_bytes]
+
+    SimpleResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+      required: [success]

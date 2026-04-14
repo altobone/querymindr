@@ -8,9 +8,224 @@
 import * as zod from "zod";
 
 /**
- * Returns server health status
  * @summary Health check
  */
 export const HealthCheckResponse = zod.object({
   status: zod.string(),
+});
+
+/**
+ * @summary Search files with filters
+ */
+export const searchFilesQuerySortByDefault = `date`;
+export const searchFilesQuerySortOrderDefault = `desc`;
+export const searchFilesQueryPageDefault = 1;
+export const searchFilesQueryLimitDefault = 50;
+
+export const SearchFilesQueryParams = zod.object({
+  query: zod.coerce.string().optional(),
+  types: zod.coerce
+    .string()
+    .optional()
+    .describe("Comma-separated list of file extensions (e.g. mp4,mov,jpg)"),
+  date_from: zod.coerce.string().optional(),
+  date_to: zod.coerce.string().optional(),
+  size_min: zod.coerce.number().optional(),
+  size_max: zod.coerce.number().optional(),
+  folder_scope: zod.coerce.string().optional(),
+  sort_by: zod
+    .enum(["name", "date", "size", "type"])
+    .default(searchFilesQuerySortByDefault),
+  sort_order: zod
+    .enum(["asc", "desc"])
+    .default(searchFilesQuerySortOrderDefault),
+  page: zod.coerce.number().default(searchFilesQueryPageDefault),
+  limit: zod.coerce.number().default(searchFilesQueryLimitDefault),
+});
+
+export const SearchFilesResponse = zod.object({
+  files: zod.array(
+    zod.object({
+      id: zod.number(),
+      path: zod.string(),
+      name: zod.string(),
+      extension: zod.string(),
+      size_bytes: zod.number(),
+      modified_at: zod.string(),
+      created_at: zod.string(),
+      folder: zod.string(),
+      ai_summary: zod.string().nullish(),
+      checksum: zod.string().nullish(),
+    }),
+  ),
+  total: zod.number(),
+  page: zod.number(),
+  limit: zod.number(),
+});
+
+/**
+ * @summary Natural language AI-powered file search
+ */
+export const AiSearchFilesBody = zod.object({
+  description: zod.string(),
+  folder_scope: zod.string().nullish(),
+});
+
+export const AiSearchFilesResponse = zod.object({
+  files: zod.array(
+    zod.object({
+      id: zod.number(),
+      path: zod.string(),
+      name: zod.string(),
+      extension: zod.string(),
+      size_bytes: zod.number(),
+      modified_at: zod.string(),
+      created_at: zod.string(),
+      folder: zod.string(),
+      ai_summary: zod.string().nullish(),
+      checksum: zod.string().nullish(),
+    }),
+  ),
+  explanation: zod.string(),
+  total: zod.number(),
+});
+
+/**
+ * @summary Generate AI summary for a file
+ */
+export const AiSummarizeFileBody = zod.object({
+  file_id: zod.number(),
+});
+
+export const AiSummarizeFileResponse = zod.object({
+  summary: zod.string(),
+  file_id: zod.number(),
+});
+
+/**
+ * @summary Find files similar to a given file
+ */
+export const moreLikeThisBodyLimitDefault = 20;
+
+export const MoreLikeThisBody = zod.object({
+  file_id: zod.number(),
+  limit: zod.number().default(moreLikeThisBodyLimitDefault),
+});
+
+export const MoreLikeThisResponse = zod.object({
+  files: zod.array(
+    zod.object({
+      id: zod.number(),
+      path: zod.string(),
+      name: zod.string(),
+      extension: zod.string(),
+      size_bytes: zod.number(),
+      modified_at: zod.string(),
+      created_at: zod.string(),
+      folder: zod.string(),
+      ai_summary: zod.string().nullish(),
+      checksum: zod.string().nullish(),
+    }),
+  ),
+  total: zod.number(),
+  page: zod.number(),
+  limit: zod.number(),
+});
+
+/**
+ * @summary Reveal file in macOS Finder
+ */
+export const OpenInFinderBody = zod.object({
+  path: zod.string(),
+});
+
+export const OpenInFinderResponse = zod.object({
+  success: zod.boolean(),
+  message: zod.string().optional(),
+});
+
+/**
+ * @summary Find duplicate files by content hash
+ */
+export const FindDuplicatesQueryParams = zod.object({
+  folder_scope: zod.coerce.string().optional(),
+});
+
+export const FindDuplicatesResponse = zod.object({
+  groups: zod.array(
+    zod.object({
+      checksum: zod.string(),
+      files: zod.array(
+        zod.object({
+          id: zod.number(),
+          path: zod.string(),
+          name: zod.string(),
+          extension: zod.string(),
+          size_bytes: zod.number(),
+          modified_at: zod.string(),
+          created_at: zod.string(),
+          folder: zod.string(),
+          ai_summary: zod.string().nullish(),
+          checksum: zod.string().nullish(),
+        }),
+      ),
+      wasted_bytes: zod.number(),
+    }),
+  ),
+  total_wasted_bytes: zod.number(),
+});
+
+/**
+ * @summary Start background file indexing
+ */
+export const StartIndexingBody = zod.object({
+  root_dir: zod.string(),
+});
+
+export const StartIndexingResponse = zod.object({
+  status: zod.enum(["idle", "running", "completed", "failed"]),
+  root_dir: zod.string().nullish(),
+  total_files: zod.number(),
+  processed_files: zod.number(),
+  started_at: zod.string().nullish(),
+  completed_at: zod.string().nullish(),
+  error_message: zod.string().nullish(),
+});
+
+/**
+ * @summary Get current indexing status
+ */
+export const GetIndexStatusResponse = zod.object({
+  status: zod.enum(["idle", "running", "completed", "failed"]),
+  root_dir: zod.string().nullish(),
+  total_files: zod.number(),
+  processed_files: zod.number(),
+  started_at: zod.string().nullish(),
+  completed_at: zod.string().nullish(),
+  error_message: zod.string().nullish(),
+});
+
+/**
+ * @summary Get top-level folder list for scope selection
+ */
+export const GetFoldersResponse = zod.object({
+  folders: zod.array(zod.string()),
+  root_dir: zod.string(),
+});
+
+/**
+ * @summary Get index statistics
+ */
+export const GetIndexStatsResponse = zod.object({
+  total_files: zod.number(),
+  total_size_bytes: zod.number(),
+  file_types: zod.array(
+    zod.object({
+      extension: zod.string(),
+      count: zod.number(),
+      total_size_bytes: zod.number(),
+    }),
+  ),
+  last_indexed: zod.string().nullish(),
+  root_dir: zod.string().nullish(),
 });

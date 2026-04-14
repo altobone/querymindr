@@ -6,4 +6,25 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from "./aiSearchRequest";
+export * from "./aiSearchResults";
+export * from "./aiSummarizeRequest";
+export * from "./aiSummarizeResponse";
+export * from "./duplicateGroup";
+export * from "./duplicatesResults";
+export * from "./fileResult";
+export * from "./fileTypeCount";
+export * from "./findDuplicatesParams";
+export * from "./folderList";
 export * from "./healthStatus";
+export * from "./indexStats";
+export * from "./indexStatus";
+export * from "./indexStatusStatus";
+export * from "./moreLikeThisRequest";
+export * from "./openFileRequest";
+export * from "./searchFilesParams";
+export * from "./searchFilesSortBy";
+export * from "./searchFilesSortOrder";
+export * from "./searchResults";
+export * from "./simpleResponse";
+export * from "./startIndexRequest";
