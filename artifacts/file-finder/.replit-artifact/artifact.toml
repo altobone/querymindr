@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/file-finder/"
+title = "File Finder"
+version = "1.0.0"
+id = "artifacts/file-finder"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/file-finder/" ]
+localPort = 20464
+
+[services.development]
+run = "pnpm --filter @workspace/file-finder run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/file-finder", "run", "build" ]
+publicDir = "artifacts/file-finder/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "20464"
+BASE_PATH = "/file-finder/"
