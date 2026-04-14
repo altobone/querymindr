@@ -251,11 +251,31 @@ router.get("/file-finder/search", async (req: Request, res: Response) => {
     const sortCol = sort_by === "name" ? "name" : sort_by === "size" ? "size_bytes" : sort_by === "type" ? "extension" : "modified_at";
     const order = sort_order === "asc" ? "ASC" : "DESC";
 
-    let allFiles = db.prepare(`SELECT * FROM file_index ${where} ORDER BY ${sortCol} ${order}`).all(...params) as FileRow[];
+    let allFiles: FileRow[];
 
     if (query.trim()) {
-      const fuse = new Fuse(allFiles, { keys: ["name", "folder", "content_text"], threshold: 0.4, includeScore: true });
-      allFiles = fuse.search(query.trim()).map((r) => r.item);
+      const q = query.trim();
+      // Build name/path conditions alongside any existing filters
+      const nameConditions = [...conditions, "(LOWER(name) LIKE LOWER(?) OR LOWER(path) LIKE LOWER(?))"];
+      const nameParams: (string | number)[] = [...params, `%${q}%`, `%${q}%`];
+      const nameWhere = `WHERE ${nameConditions.join(" AND ")}`;
+      const exact = db.prepare(`SELECT * FROM file_index ${nameWhere} ORDER BY ${sortCol} ${order}`).all(...nameParams) as FileRow[];
+
+      if (exact.length > 0) {
+        // Exact substring match found — sort so closest matches appear first
+        allFiles = exact.sort((a, b) => {
+          const aExact = a.name.toLowerCase() === q.toLowerCase() ? 0 : 1;
+          const bExact = b.name.toLowerCase() === q.toLowerCase() ? 0 : 1;
+          return aExact - bExact;
+        });
+      } else {
+        // Fall back to fuzzy search only when nothing matched exactly
+        const base = db.prepare(`SELECT * FROM file_index ${where} ORDER BY ${sortCol} ${order}`).all(...params) as FileRow[];
+        const fuse = new Fuse(base, { keys: ["name", "folder", "content_text"], threshold: 0.3, includeScore: true });
+        allFiles = fuse.search(q).map((r) => r.item);
+      }
+    } else {
+      allFiles = db.prepare(`SELECT * FROM file_index ${where} ORDER BY ${sortCol} ${order}`).all(...params) as FileRow[];
     }
 
     const total = allFiles.length;
