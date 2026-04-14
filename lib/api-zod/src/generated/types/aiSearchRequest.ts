@@ -9,4 +9,5 @@
 export interface AiSearchRequest {
   description: string;
   folder_scope?: string | null;
+  model?: string | null;
 }

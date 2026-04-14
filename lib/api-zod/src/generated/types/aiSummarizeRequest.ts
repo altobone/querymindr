@@ -8,4 +8,5 @@
 
 export interface AiSummarizeRequest {
   file_id: number;
+  model?: string | null;
 }

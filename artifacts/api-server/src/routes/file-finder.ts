@@ -18,11 +18,19 @@ const execAsync = promisify(exec);
 const ROOT_DIR = process.env.ROOT_DIR || process.cwd();
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 
+const VALID_MODELS = ["claude-haiku-4-5", "claude-sonnet-4-5"];
+const DEFAULT_MODEL = "claude-haiku-4-5";
+
 let isIndexingRunning = false;
 
 function getAnthropicClient() {
   if (!ANTHROPIC_API_KEY) return null;
   return new Anthropic({ apiKey: ANTHROPIC_API_KEY });
+}
+
+function resolveModel(requested?: string | null): string {
+  if (requested && VALID_MODELS.includes(requested)) return requested;
+  return DEFAULT_MODEL;
 }
 
 function formatFileResult(f: typeof fileIndex.$inferSelect) {
@@ -245,7 +253,7 @@ router.get("/file-finder/search", async (req: Request, res: Response) => {
 
 router.post("/file-finder/ai-search", async (req: Request, res: Response) => {
   try {
-    const { description, folder_scope } = req.body;
+    const { description, folder_scope, model } = req.body;
     const client = getAnthropicClient();
 
     const conditions = folder_scope ? [like(fileIndex.folder, `${folder_scope}%`)] : [];
@@ -261,7 +269,7 @@ router.post("/file-finder/ai-search", async (req: Request, res: Response) => {
     const fileList = allFiles.slice(0, 1000).map((f) => `ID:${f.id} | ${f.name} | ${f.extension} | ${f.folder} | ${f.aiSummary ?? ""}`).join("\n");
 
     const response = await client.messages.create({
-      model: "claude-sonnet-4-5",
+      model: resolveModel(model),
       max_tokens: 1024,
       messages: [{
         role: "user",
@@ -292,7 +300,7 @@ router.post("/file-finder/ai-search", async (req: Request, res: Response) => {
 
 router.post("/file-finder/ai-summarize", async (req: Request, res: Response) => {
   try {
-    const { file_id } = req.body;
+    const { file_id, model } = req.body;
     const client = getAnthropicClient();
 
     const [file] = await db.select().from(fileIndex).where(eq(fileIndex.id, file_id));
@@ -314,7 +322,7 @@ router.post("/file-finder/ai-summarize", async (req: Request, res: Response) => 
       : `Describe what this file likely contains based on its name and type. File: "${file.name}" (${file.extension}), size: ${(file.sizeBytes / 1024).toFixed(0)} KB, folder: "${file.folder}"`;
 
     const response = await client.messages.create({
-      model: "claude-sonnet-4-5",
+      model: resolveModel(model),
       max_tokens: 200,
       messages: [{ role: "user", content: prompt }],
     });
@@ -330,7 +338,7 @@ router.post("/file-finder/ai-summarize", async (req: Request, res: Response) => 
 
 router.post("/file-finder/more-like-this", async (req: Request, res: Response) => {
   try {
-    const { file_id, limit: limitRaw = 20 } = req.body;
+    const { file_id, limit: limitRaw = 20, model } = req.body;
     const limitNum = Math.min(50, Math.max(1, parseInt(String(limitRaw))));
 
     const [file] = await db.select().from(fileIndex).where(eq(fileIndex.id, file_id));
@@ -349,7 +357,7 @@ router.post("/file-finder/more-like-this", async (req: Request, res: Response) =
     const fileList = allFiles.slice(0, 800).map((f) => `ID:${f.id} | ${f.name} | ${f.extension} | ${f.folder} | ${f.aiSummary ?? ""}`).join("\n");
 
     const response = await client.messages.create({
-      model: "claude-sonnet-4-5",
+      model: resolveModel(model),
       max_tokens: 512,
       messages: [{
         role: "user",

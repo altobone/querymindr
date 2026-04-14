@@ -69,6 +69,7 @@ export const SearchFilesResponse = zod.object({
 export const AiSearchFilesBody = zod.object({
   description: zod.string(),
   folder_scope: zod.string().nullish(),
+  model: zod.string().nullish(),
 });
 
 export const AiSearchFilesResponse = zod.object({
@@ -95,6 +96,7 @@ export const AiSearchFilesResponse = zod.object({
  */
 export const AiSummarizeFileBody = zod.object({
   file_id: zod.number(),
+  model: zod.string().nullish(),
 });
 
 export const AiSummarizeFileResponse = zod.object({
@@ -110,6 +112,7 @@ export const moreLikeThisBodyLimitDefault = 20;
 export const MoreLikeThisBody = zod.object({
   file_id: zod.number(),
   limit: zod.number().default(moreLikeThisBodyLimitDefault),
+  model: zod.string().nullish(),
 });
 
 export const MoreLikeThisResponse = zod.object({

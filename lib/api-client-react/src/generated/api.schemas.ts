@@ -32,6 +32,7 @@ export interface SearchResults {
 export interface AiSearchRequest {
   description: string;
   folder_scope?: string | null;
+  model?: string | null;
 }
 
 export interface AiSearchResults {
@@ -42,6 +43,7 @@ export interface AiSearchResults {
 
 export interface AiSummarizeRequest {
   file_id: number;
+  model?: string | null;
 }
 
 export interface AiSummarizeResponse {
@@ -52,6 +54,7 @@ export interface AiSummarizeResponse {
 export interface MoreLikeThisRequest {
   file_id: number;
   limit?: number;
+  model?: string | null;
 }
 
 export interface OpenFileRequest {

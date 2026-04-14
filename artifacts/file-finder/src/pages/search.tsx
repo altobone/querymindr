@@ -13,10 +13,13 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import type { FileResult, SearchFilesSortBy, SearchFilesSortOrder } from "@workspace/api-client-react/src/generated/api.schemas";
 
+const MODEL_STORAGE_KEY = "file-finder-ai-model";
+
 export default function SearchPage() {
   const [query, setQuery] = useState("");
   const [isAiSearch, setIsAiSearch] = useState(false);
   const [selectedFile, setSelectedFile] = useState<FileResult | null>(null);
+  const aiModel = () => localStorage.getItem(MODEL_STORAGE_KEY) ?? "claude-haiku-4-5";
   
   // Filters
   const [folderScope, setFolderScope] = useState<string>("all");
@@ -63,6 +66,7 @@ export default function SearchPage() {
         data: {
           description: query,
           folder_scope: folderScope !== "all" ? folderScope : undefined,
+          model: aiModel(),
         }
       }, {
         onSuccess: (data) => {
@@ -87,7 +91,7 @@ export default function SearchPage() {
   };
 
   const handleSummarize = (fileId: number) => {
-    summarizeFile.mutate({ data: { file_id: fileId } }, {
+    summarizeFile.mutate({ data: { file_id: fileId, model: aiModel() } }, {
       onSuccess: (data) => {
         if (selectedFile?.id === fileId) {
           setSelectedFile({ ...selectedFile, ai_summary: data.summary });
@@ -97,7 +101,7 @@ export default function SearchPage() {
   };
 
   const handleMoreLikeThis = (fileId: number) => {
-    moreLikeThis.mutate({ data: { file_id: fileId, limit: 20 } }, {
+    moreLikeThis.mutate({ data: { file_id: fileId, limit: 20, model: aiModel() } }, {
       onSuccess: (data) => {
         setIsAiSearch(false);
         // We'll hijack the search query field to show we are looking at similar files

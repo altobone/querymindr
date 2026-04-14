@@ -9,4 +9,5 @@
 export interface MoreLikeThisRequest {
   file_id: number;
   limit?: number;
+  model?: string | null;
 }

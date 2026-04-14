@@ -301,6 +301,9 @@ components:
         folder_scope:
           type: string
           nullable: true
+        model:
+          type: string
+          nullable: true
       required: [description]
 
     AiSearchResults:
@@ -321,6 +324,9 @@ components:
       properties:
         file_id:
           type: integer
+        model:
+          type: string
+          nullable: true
       required: [file_id]
 
     AiSummarizeResponse:
@@ -340,6 +346,9 @@ components:
         limit:
           type: integer
           default: 20
+        model:
+          type: string
+          nullable: true
       required: [file_id]
 
     OpenFileRequest:

@@ -5,13 +5,27 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { HardDrive, Activity, Folder, File, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { HardDrive, Activity, AlertTriangle, CheckCircle2, Cpu } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+const MODEL_STORAGE_KEY = "file-finder-ai-model";
+const MODEL_OPTIONS = [
+  { value: "claude-haiku-4-5", label: "Claude Haiku", description: "Faster & cheaper — great for most searches" },
+  { value: "claude-sonnet-4-5", label: "Claude Sonnet", description: "More powerful — better for complex queries" },
+];
 
 export default function SettingsPage() {
   const [rootDir, setRootDir] = useState("/Users/admin");
+  const [selectedModel, setSelectedModel] = useState<string>(() => localStorage.getItem(MODEL_STORAGE_KEY) ?? "claude-haiku-4-5");
   const { toast } = useToast();
+
+  const handleModelChange = (value: string) => {
+    setSelectedModel(value);
+    localStorage.setItem(MODEL_STORAGE_KEY, value);
+    toast({ title: "AI Model Updated", description: `Now using ${MODEL_OPTIONS.find(m => m.value === value)?.label ?? value} for searches.` });
+  };
 
   const { data: statusData, refetch: refetchStatus } = useGetIndexStatus();
   const { data: statsData, refetch: refetchStats } = useGetIndexStats();
@@ -54,7 +68,38 @@ export default function SettingsPage() {
 
       <ScrollArea className="flex-1 p-6">
         <div className="max-w-3xl space-y-8 pb-10">
-          
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Cpu className="w-5 h-5 text-primary" />
+                AI Model
+              </CardTitle>
+              <CardDescription>
+                Choose which Claude model powers AI search, summaries, and similar-file detection.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <Select value={selectedModel} onValueChange={handleModelChange}>
+                  <SelectTrigger className="w-64">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {MODEL_OPTIONS.map((m) => (
+                      <SelectItem key={m.value} value={m.value}>
+                        {m.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-sm text-muted-foreground">
+                  {MODEL_OPTIONS.find(m => m.value === selectedModel)?.description}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg">
