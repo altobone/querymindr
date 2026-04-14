@@ -20,7 +20,26 @@ const ROOT_DIR = process.env.ROOT_DIR || process.cwd();
 const VALID_MODELS = ["claude-haiku-4-5", "claude-sonnet-4-5"];
 const DEFAULT_MODEL = "claude-haiku-4-5";
 
-let runtimeApiKey: string | null = null;
+const CONFIG_DIR = path.join(process.env.HOME || process.env.USERPROFILE || "~", ".config", "file-finder");
+const CONFIG_FILE = path.join(CONFIG_DIR, "config.json");
+
+function readConfigFile(): { api_key?: string } {
+  try {
+    if (fs.existsSync(CONFIG_FILE)) {
+      return JSON.parse(fs.readFileSync(CONFIG_FILE, "utf8"));
+    }
+  } catch { /* ignore parse errors */ }
+  return {};
+}
+
+function writeConfigFile(data: { api_key?: string }): void {
+  try {
+    fs.mkdirSync(CONFIG_DIR, { recursive: true });
+    fs.writeFileSync(CONFIG_FILE, JSON.stringify(data, null, 2), { mode: 0o600 });
+  } catch { /* ignore write errors */ }
+}
+
+let runtimeApiKey: string | null = readConfigFile().api_key ?? null;
 let isIndexingRunning = false;
 
 function getActiveApiKey(): string | null {
@@ -202,9 +221,11 @@ router.post("/file-finder/ai-config", (req: Request, res: Response) => {
   const { api_key } = req.body as { api_key?: string };
   if (api_key && api_key.trim()) {
     runtimeApiKey = api_key.trim();
-    res.json({ ok: true, message: "API key saved for this session." });
+    writeConfigFile({ api_key: runtimeApiKey });
+    res.json({ ok: true, message: "API key saved." });
   } else {
     runtimeApiKey = null;
+    writeConfigFile({});
     res.json({ ok: true, message: "API key cleared." });
   }
 });

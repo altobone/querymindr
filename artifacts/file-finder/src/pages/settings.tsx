@@ -111,7 +111,7 @@ export default function SettingsPage() {
                 {apiKeyStatus === "missing" && <Badge variant="secondary" className="ml-2 text-yellow-400 border-yellow-600">Not set</Badge>}
               </CardTitle>
               <CardDescription>
-                Required for AI Search, file summaries, and "More Like This". Get your key at <span className="font-mono text-xs">console.anthropic.com</span>. Saved for this server session only.
+                Required for AI Search, file summaries, and "More Like This". Get your key at <span className="font-mono text-xs">console.anthropic.com</span>. Saved to your Mac and loaded automatically on every restart.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
