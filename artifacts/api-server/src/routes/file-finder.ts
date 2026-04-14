@@ -382,6 +382,26 @@ router.post("/file-finder/more-like-this", async (req: Request, res: Response) =
   }
 });
 
+router.delete("/file-finder/files", async (req: Request, res: Response) => {
+  try {
+    const { paths } = req.body as { paths: string[] };
+    if (!Array.isArray(paths) || paths.length === 0) return res.status(400).json({ error: "paths array required" });
+    const results: { path: string; success: boolean; error?: string }[] = [];
+    for (const filePath of paths) {
+      try {
+        fs.unlinkSync(filePath);
+        db.prepare("DELETE FROM file_index WHERE path = ?").run(filePath);
+        results.push({ path: filePath, success: true });
+      } catch (err) {
+        results.push({ path: filePath, success: false, error: err instanceof Error ? err.message : String(err) });
+      }
+    }
+    res.json({ results });
+  } catch (err: unknown) {
+    res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+  }
+});
+
 router.post("/file-finder/open", async (req: Request, res: Response) => {
   try {
     const { path: filePath } = req.body;
