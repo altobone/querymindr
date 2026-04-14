@@ -117,8 +117,9 @@ async function runIndexing(rootDir: string, jobId: number) {
       absolute: true,
       onlyFiles: true,
       followSymbolicLinks: false,
-      ignore: ["**/node_modules/**", "**/.git/**", "**/.DS_Store"],
+      ignore: ["**/node_modules/**", "**/.git/**", "**/.DS_Store", "**/.TemporaryItems/**", "**/.Spotlight-V100/**", "**/.fseventsd/**", "**/.Trashes/**"],
       dot: false,
+      suppressErrors: true,
     });
 
     const totalFiles = entries.length;
