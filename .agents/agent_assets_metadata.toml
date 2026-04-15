@@ -1,8 +1,13 @@
 uploads = []
-outputs = []
 
 [[generated]]
 id = "6yj3XQz9ciyqs7IipaJn0"
 uri = "file://artifacts/loft-mobile/assets/images/icon.png"
 type = "image"
 title = "generated_image"
+
+[[outputs]]
+id = "3qQe4a52Dob5V8unifdze"
+uri = "file://querymindr-release.tar.gz"
+type = "unspecified"
+title = "Querymindr Release (2.9 MB)"
