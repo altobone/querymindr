@@ -31,6 +31,7 @@ export default function SearchPage() {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [folderResults, setFolderResults] = useState<string[]>([]);
   const [browseReturnQuery, setBrowseReturnQuery] = useState<string>("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
 
   const { data: foldersData } = useGetFolders();
   const { toast } = useToast();
@@ -40,8 +41,15 @@ export default function SearchPage() {
   const moreLikeThis = useMoreLikeThis();
   const aiSearch = useAiSearchFiles();
 
+  // Debounce the file search query so it fires once after typing stops,
+  // not on every keystroke. Folder search has its own 300ms debounce via useEffect.
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQuery(query), 300);
+    return () => clearTimeout(t);
+  }, [query]);
+
   const { data: searchResults, isFetching: isSearchLoading, refetch: refetchSearch } = useSearchFiles({
-    query: isAiSearch ? undefined : query,
+    query: isAiSearch ? undefined : debouncedQuery,
     folder_scope: folderScope !== "all" ? folderScope : undefined,
     sort_by: sortBy,
     sort_order: sortOrder,
@@ -49,7 +57,7 @@ export default function SearchPage() {
     size_min: sizeMin ? parseInt(sizeMin) : undefined,
     size_max: sizeMax ? parseInt(sizeMax) : undefined,
     limit: 50,
-  }, { query: { enabled: !isAiSearch && (query.length > 0 || folderScope !== "all") } });
+  }, { query: { enabled: !isAiSearch && (debouncedQuery.length > 0 || folderScope !== "all") } });
 
   const [aiResults, setAiResults] = useState<FileResult[]>([]);
   const [aiExplanation, setAiExplanation] = useState<string>("");
@@ -391,16 +399,16 @@ export default function SearchPage() {
               </div>
             )}
 
-            {/* File results */}
-            {(files.length > 0 || (folderResults.length === 0 && !isLoading && query)) && (
+            {/* File results — always show when a search has been run */}
+            {!isLoading && (debouncedQuery.length > 0 || folderScope !== "all") && (
               <div className="space-y-2">
-                {folderResults.length > 0 && files.length > 0 && (
+                {(folderResults.length > 0 || files.length > 0) && (
                   <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
                     <FileText className="w-3.5 h-3.5" />
                     Files ({files.length})
                   </h3>
                 )}
-                {files.length === 0 && !isLoading && query && (
+                {files.length === 0 && !isLoading && (debouncedQuery || folderScope !== "all") && (
                   <div className="text-center py-20 text-muted-foreground">
                     No files found matching your query.
                   </div>
