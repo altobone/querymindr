@@ -48,7 +48,7 @@ export default function SearchPage() {
     size_min: sizeMin ? parseInt(sizeMin) : undefined,
     size_max: sizeMax ? parseInt(sizeMax) : undefined,
     limit: 50,
-  }, { query: { enabled: !isAiSearch && query.length > 0 } });
+  }, { query: { enabled: !isAiSearch && (query.length > 0 || folderScope !== "all") } });
 
   const [aiResults, setAiResults] = useState<FileResult[]>([]);
   const [aiExplanation, setAiExplanation] = useState<string>("");
