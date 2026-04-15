@@ -4,7 +4,7 @@ import { formatBytes, formatDate, cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Search, Sparkles, Folder, FileText, Calendar, HardDrive, File as FileIcon, X, Maximize2, MoreHorizontal, TerminalSquare, Copy, Filter, Loader2 } from "lucide-react";
+import { Search, Sparkles, Folder, FolderOpen, FileText, Calendar, HardDrive, File as FileIcon, X, Maximize2, MoreHorizontal, TerminalSquare, Copy, Filter, Loader2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
@@ -30,6 +30,7 @@ export default function SearchPage() {
   const [sizeMax, setSizeMax] = useState<string>("");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [folderResults, setFolderResults] = useState<string[]>([]);
+  const [browseReturnQuery, setBrowseReturnQuery] = useState<string>("");
 
   const { data: foldersData } = useGetFolders();
   const { toast } = useToast();
@@ -98,10 +99,19 @@ export default function SearchPage() {
   };
 
   const handleBrowseFolder = (folderPath: string) => {
+    setBrowseReturnQuery(query);
     setFolderScope(folderPath);
     setQuery("");
     setFolderResults([]);
     setSimilarResults(null);
+  };
+
+  const handleExitFolderBrowse = () => {
+    setFolderScope("all");
+    if (browseReturnQuery) {
+      setQuery(browseReturnQuery);
+      setBrowseReturnQuery("");
+    }
   };
 
   const handleOpenInFinder = (path: string) => {
@@ -284,7 +294,15 @@ export default function SearchPage() {
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20">
                   <Folder className="w-3 h-3 shrink-0" />
                   {folderScope.split("/").pop() ?? folderScope}
-                  <button onClick={() => setFolderScope("all")} className="hover:opacity-60 transition-opacity ml-0.5" aria-label="Remove folder filter">
+                  <button
+                    onClick={() => handleOpenInFinder(folderScope)}
+                    className="hover:opacity-60 transition-opacity ml-0.5"
+                    aria-label="Reveal folder in Finder"
+                    title="Reveal in Finder"
+                  >
+                    <FolderOpen className="w-3 h-3" />
+                  </button>
+                  <button onClick={handleExitFolderBrowse} className="hover:opacity-60 transition-opacity" aria-label="Exit folder browse">
                     <X className="w-3 h-3" />
                   </button>
                 </span>
@@ -346,14 +364,26 @@ export default function SearchPage() {
                             <p className="text-xs text-muted-foreground font-mono truncate">{parent}</p>
                           </div>
                         </div>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="shrink-0 ml-4 gap-1.5"
-                          onClick={() => handleBrowseFolder(f)}
-                        >
-                          Browse
-                        </Button>
+                        <div className="flex items-center gap-2 shrink-0 ml-4">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="gap-1.5"
+                            onClick={() => handleOpenInFinder(f)}
+                            title="Reveal in Finder"
+                          >
+                            <FolderOpen className="w-3.5 h-3.5" />
+                            Reveal
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="gap-1.5"
+                            onClick={() => handleBrowseFolder(f)}
+                          >
+                            Browse
+                          </Button>
+                        </div>
                       </div>
                     );
                   })}
