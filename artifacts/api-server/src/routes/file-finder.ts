@@ -266,10 +266,6 @@ async function runIncrementalIndexing(rootDirs: string[], jobId: number) {
       return;
     }
 
-    // Phase 2: for each changed dir, compare disk vs DB to find new/changed/removed files
-    const toProcess: Array<{ filePath: string; stat: fs.Stats }> = [];
-    const toRemove: string[] = [];
-
     const upsert = db.prepare(`
       INSERT INTO file_index (path, name, extension, size_bytes, modified_at, created_at, folder, content_text, ai_summary, checksum, inode, indexed_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, datetime('now'))
@@ -280,13 +276,16 @@ async function runIncrementalIndexing(rootDirs: string[], jobId: number) {
         indexed_at = datetime('now')
     `);
 
+    const checksumLimitMb = readConfigFile().checksum_limit_mb ?? 100;
+    let processed = 0;
+    let progressCounter = 0;
+
+    // Process each directory immediately — never accumulate all files into memory at once
     for (const dir of changedDirs) {
-      // Load DB entries for this directory
       const dbFiles = new Map<string, { modified_at: string | null; inode: number | null }>();
       const dbRows = db.prepare("SELECT path, modified_at, inode FROM file_index WHERE folder = ?").all(dir) as { path: string; modified_at: string | null; inode: number | null }[];
       for (const r of dbRows) dbFiles.set(r.path, { modified_at: r.modified_at, inode: r.inode });
 
-      // List files currently on disk in this directory (one level only)
       let diskEntries: fs.Dirent[] = [];
       try { diskEntries = fs.readdirSync(dir, { withFileTypes: true }); } catch { continue; }
 
@@ -299,62 +298,44 @@ async function runIncrementalIndexing(rootDirs: string[], jobId: number) {
         try {
           const stat = fs.statSync(filePath);
           const existing = dbFiles.get(filePath);
-          if (!existing) {
-            toProcess.push({ filePath, stat }); // New file
-          } else {
-            const mtime = stat.mtime.toISOString();
-            if (mtime !== existing.modified_at || stat.ino !== existing.inode) {
-              toProcess.push({ filePath, stat }); // Modified file
-            }
+          const needsProcess = !existing || stat.mtime.toISOString() !== existing.modified_at || stat.ino !== existing.inode;
+          if (!needsProcess) continue;
+
+          const ext = path.extname(filePath).toLowerCase();
+          const name = path.basename(filePath);
+          const folder = path.dirname(filePath);
+
+          let checksum: string | null = null;
+          try { if (stat.size <= checksumLimitMb * 1024 * 1024) checksum = await computeChecksum(filePath); } catch { }
+
+          let content: string | null = null;
+          try { content = await extractTextContent(filePath, ext); } catch { }
+
+          db.exec("BEGIN");
+          try {
+            upsert.run(filePath, name, ext || "(no extension)", stat.size, stat.mtime.toISOString(), (stat.birthtime || stat.mtime).toISOString(), folder, content, checksum, stat.ino ?? null);
+            db.exec("COMMIT");
+          } catch { db.exec("ROLLBACK"); }
+
+          processed++;
+          progressCounter++;
+          if (progressCounter >= 50) {
+            db.prepare("UPDATE indexing_jobs SET processed_files = ? WHERE id = ?").run(processed, jobId);
+            progressCounter = 0;
           }
         } catch { }
       }
 
-      // Files in DB for this dir that are no longer on disk
+      // Remove stale DB entries for this directory immediately
       for (const [dbPath] of dbFiles) {
-        if (!diskPaths.has(dbPath)) toRemove.push(dbPath);
+        if (!diskPaths.has(dbPath)) {
+          db.prepare("DELETE FROM file_index WHERE path = ?").run(dbPath);
+        }
       }
     }
 
-    // Phase 3: remove stale entries
-    for (const p of toRemove) {
-      db.prepare("DELETE FROM file_index WHERE path = ?").run(p);
-    }
-
-    // Phase 4: process new / changed files
-    const total = toProcess.length;
-    db.prepare("UPDATE indexing_jobs SET total_files = ? WHERE id = ?").run(total, jobId);
-
-    let processed = 0;
-    for (const { filePath, stat } of toProcess) {
-      try {
-        if (!stat.isFile()) { processed++; continue; }
-        const ext = path.extname(filePath).toLowerCase();
-        const name = path.basename(filePath);
-        const folder = path.dirname(filePath);
-
-        const checksumLimitMb = readConfigFile().checksum_limit_mb ?? 100;
-        let checksum: string | null = null;
-        try { if (stat.size <= checksumLimitMb * 1024 * 1024) checksum = await computeChecksum(filePath); } catch { }
-
-        let content: string | null = null;
-        try { content = await extractTextContent(filePath, ext); } catch { }
-
-        const inode = stat.ino ?? null;
-
-        db.exec("BEGIN");
-        try {
-          upsert.run(filePath, name, ext || "(no extension)", stat.size, stat.mtime.toISOString(), (stat.birthtime || stat.mtime).toISOString(), folder, content, checksum, inode);
-          db.exec("COMMIT");
-        } catch { db.exec("ROLLBACK"); }
-      } catch { }
-
-      processed++;
-      db.prepare("UPDATE indexing_jobs SET processed_files = ? WHERE id = ?").run(processed, jobId);
-    }
-
-    db.prepare("UPDATE indexing_jobs SET status = 'completed', completed_at = ?, processed_files = ? WHERE id = ?")
-      .run(new Date().toISOString(), processed, jobId);
+    db.prepare("UPDATE indexing_jobs SET status = 'completed', completed_at = ?, processed_files = ?, total_files = ? WHERE id = ?")
+      .run(new Date().toISOString(), processed, processed, jobId);
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
     db.prepare("UPDATE indexing_jobs SET status = 'failed', error_message = ?, completed_at = ? WHERE id = ?")
