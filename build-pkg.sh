@@ -158,10 +158,15 @@ chown -R "$CURRENT_USER" "$INSTALL_DIR"
 OLD_DB="$USER_HOME/.config/file-finder/file-finder.db"
 NEW_CONFIG_DIR="$USER_HOME/.config/querymindr"
 NEW_DB="$NEW_CONFIG_DIR/querymindr.db"
-if [ -f "$OLD_DB" ] && [ ! -f "$NEW_DB" ]; then
-  mkdir -p "$NEW_CONFIG_DIR"
-  cp "$OLD_DB" "$NEW_DB"
-  chown -R "$CURRENT_USER" "$NEW_CONFIG_DIR"
+if [ -f "$OLD_DB" ]; then
+  OLD_SIZE=$(stat -f%z "$OLD_DB" 2>/dev/null || echo "0")
+  NEW_SIZE=$(stat -f%z "$NEW_DB" 2>/dev/null || echo "0")
+  # Migrate if old DB is larger (has real data) and new DB is absent or empty/smaller
+  if [ "$OLD_SIZE" -gt "$NEW_SIZE" ]; then
+    mkdir -p "$NEW_CONFIG_DIR"
+    cp "$OLD_DB" "$NEW_DB"
+    chown -R "$CURRENT_USER" "$NEW_CONFIG_DIR"
+  fi
 fi
 
 # ------------------------------------------------------------------
