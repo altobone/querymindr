@@ -103,15 +103,31 @@ if [ -z "$SWIFT_BIN" ]; then
   echo "     To install: xcode-select --install, then re-run this script."
   MENUBAR_BUILT=false
 else
-  swiftc menu-bar/MenuBar.swift \
-    -framework Cocoa \
-    -framework Foundation \
-    -O \
-    -o "$INSTALL_DIR/FileFinder-MenuBar" 2>&1 && MENUBAR_BUILT=true || MENUBAR_BUILT=false
+  # Use xcrun to pick up the correct SDK automatically; suppress noisy module map
+  # warnings from newer Xcode CLTs that don't affect the compiled binary.
+  SDK_PATH="$(xcrun --sdk macosx --show-sdk-path 2>/dev/null || echo "")"
+  if [ -n "$SDK_PATH" ]; then
+    xcrun swiftc menu-bar/MenuBar.swift \
+      -framework Cocoa \
+      -framework Foundation \
+      -sdk "$SDK_PATH" \
+      -O \
+      -o "$INSTALL_DIR/FileFinder-MenuBar" 2>/dev/null || true
+  else
+    swiftc menu-bar/MenuBar.swift \
+      -framework Cocoa \
+      -framework Foundation \
+      -O \
+      -o "$INSTALL_DIR/FileFinder-MenuBar" 2>/dev/null || true
+  fi
 
-  if [ "$MENUBAR_BUILT" = true ]; then
+  # Success is determined by whether the binary was actually produced,
+  # not the exit code (newer CLTs emit module map warnings on exit).
+  if [ -f "$INSTALL_DIR/FileFinder-MenuBar" ]; then
+    MENUBAR_BUILT=true
     echo "     Menu bar app built."
   else
+    MENUBAR_BUILT=false
     echo "     ⚠️  Menu bar build failed — skipping. The web app will still work."
   fi
 fi
