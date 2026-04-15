@@ -73,12 +73,21 @@ export default function HelpPage() {
         <div className="px-8 py-8 max-w-4xl space-y-10">
 
           {/* Overview */}
-          <section>
+          <section className="space-y-4">
             <p className="text-muted-foreground leading-relaxed">
               Querymindr is a local search tool built for large external drives. It indexes every file
               on your drive into a fast database on your Mac — then lets you search by word, partial
               title, or plain language in seconds, no matter how many terabytes you have.
               Everything runs on your machine. Your files never leave your computer.
+            </p>
+            <p className="text-muted-foreground leading-relaxed">
+              Querymindr works great right out of the box — no account, no subscription, no internet
+              connection required. But add a free API key from{" "}
+              <span className="text-foreground font-medium">Anthropic</span> and you unlock a whole
+              new level of power: describe what you're looking for in plain English and let AI find
+              it for you, get instant summaries of large search results, and surface files you didn't
+              even know to search for. Go to{" "}
+              <strong className="text-foreground">Settings → Anthropic API Key</strong> to add yours.
             </p>
           </section>
 
@@ -98,7 +107,7 @@ export default function HelpPage() {
               <FeatureCard
                 icon={<Waves className="w-5 h-5" />}
                 title="Fuzzy / Typo Tolerance"
-                description={"Misspell a word and Querymindr still finds it \u2014 \"trambones\" finds \"trombones.\" Kicks in automatically when there are no exact matches."}
+                description={"Misspell a word and Querymindr still finds it \u2014 \"flowar\" finds \"flower.\" Kicks in automatically when there are no exact matches."}
               />
               <FeatureCard
                 icon={<FolderOpen className="w-5 h-5" />}
@@ -118,7 +127,7 @@ export default function HelpPage() {
               <FeatureCard
                 icon={<Sparkles className="w-5 h-5" />}
                 title="AI Magic Search"
-                description={"Describe what you're looking for in plain language \u2014 \"a brass quintet from 2019\" \u2014 and Claude finds the best matches across your entire drive."}
+                description={"Describe what you're looking for in plain language \u2014 \"invoices from last year over $500\" \u2014 and Claude finds the best matches across your entire drive."}
                 requiresKey
               />
               <FeatureCard
@@ -215,8 +224,8 @@ export default function HelpPage() {
             <h2 className="text-xl font-bold text-foreground mb-5">Search Tips</h2>
             <div className="bg-card border border-border rounded-lg p-6">
               <ul className="space-y-3">
-                <Tip>Search is word-based — <strong className="text-foreground">"brass quintet"</strong> finds files containing both words anywhere in their name.</Tip>
-                <Tip>Partial words work — <strong className="text-foreground">"trombon"</strong> matches "trombone", "trombones", "trombonist".</Tip>
+                <Tip>Search is word-based — <strong className="text-foreground">"budget proposal"</strong> finds files containing both words anywhere in their name.</Tip>
+                <Tip>Partial words work — <strong className="text-foreground">"report"</strong> matches "reports", "reporting", "quarterly-report-2024".</Tip>
                 <Tip>Use the <strong className="text-foreground">Folder toggle</strong> in the search bar to switch between searching files and searching folder names.</Tip>
                 <Tip>Fuzzy matching kicks in automatically when your search returns zero results (works best with 5+ character queries).</Tip>
                 <Tip><strong className="text-foreground">Quick Update</strong> is all you need after adding new files — save Full Re-index for major drive reorganizations.</Tip>
