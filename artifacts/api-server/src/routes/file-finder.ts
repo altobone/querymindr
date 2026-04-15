@@ -126,8 +126,8 @@ async function runIndexing(rootDir: string, jobId: number) {
     db.prepare("UPDATE indexing_jobs SET total_files = ? WHERE id = ?").run(totalFiles, jobId);
 
     const upsert = db.prepare(`
-      INSERT INTO file_index (path, name, extension, size_bytes, modified_at, created_at, folder, content_text, ai_summary, checksum, indexed_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, datetime('now'))
+      INSERT INTO file_index (path, name, extension, size_bytes, modified_at, created_at, folder, content_text, ai_summary, checksum, inode, indexed_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, datetime('now'))
       ON CONFLICT(path) DO UPDATE SET
         name = excluded.name,
         extension = excluded.extension,
@@ -137,6 +137,7 @@ async function runIndexing(rootDir: string, jobId: number) {
         folder = excluded.folder,
         content_text = excluded.content_text,
         checksum = excluded.checksum,
+        inode = excluded.inode,
         indexed_at = datetime('now')
     `);
 
@@ -156,10 +157,10 @@ async function runIndexing(rootDir: string, jobId: number) {
           const name = path.basename(filePath);
           const folder = path.dirname(filePath);
 
-          // Only checksum small files (≤10 MB) to avoid blocking on large audio/video
+          // Checksum files ≤100 MB (covers most audio tracks; skips very large video)
           let checksum: string | null = null;
           try {
-            if (stat.size <= 10 * 1024 * 1024) {
+            if (stat.size <= 100 * 1024 * 1024) {
               checksum = await computeChecksum(filePath);
             }
           } catch { }
@@ -170,9 +171,11 @@ async function runIndexing(rootDir: string, jobId: number) {
             content = await extractTextContent(filePath, ext);
           } catch { }
 
+          const inode = stat.ino ?? null;
+
           db.exec("BEGIN");
           try {
-            upsert.run(filePath, name, ext || "(no extension)", stat.size, stat.mtime.toISOString(), (stat.birthtime || stat.mtime).toISOString(), folder, content, checksum);
+            upsert.run(filePath, name, ext || "(no extension)", stat.size, stat.mtime.toISOString(), (stat.birthtime || stat.mtime).toISOString(), folder, content, checksum, inode);
             db.exec("COMMIT");
           } catch (txErr) {
             db.exec("ROLLBACK");
@@ -443,18 +446,39 @@ router.get("/file-finder/duplicates", async (req: Request, res: Response) => {
     const folderFilter = folder_scope ? "AND fi.folder LIKE ?" : "";
     const params: unknown[] = folder_scope ? [`${folder_scope}%`] : [];
 
-    // Single query: join each file against the set of duplicate checksums
+    // Inode-aware duplicate query:
+    // 1. Pick one representative path per unique physical file (checksum + inode)
+    // 2. Only include checksum groups where multiple distinct inodes exist
+    //    (= true separate copies, not hard links to the same physical file)
+    // Falls back to inode-unaware behaviour for files indexed before inode tracking.
     const rows = db.prepare(`
       SELECT fi.*
       FROM file_index fi
-      INNER JOIN (
-        SELECT checksum
-        FROM file_index
-        WHERE checksum IS NOT NULL
-        GROUP BY checksum
-        HAVING COUNT(*) > 1
-      ) dups ON fi.checksum = dups.checksum
-      WHERE fi.checksum IS NOT NULL ${folderFilter}
+      WHERE fi.checksum IS NOT NULL
+        AND (
+          -- Inode-aware: one representative per (checksum, inode), only where >1 distinct inode exists
+          (fi.inode IS NOT NULL
+            AND fi.id = (
+              SELECT MIN(id) FROM file_index
+              WHERE checksum = fi.checksum AND inode = fi.inode
+            )
+            AND fi.checksum IN (
+              SELECT checksum FROM file_index
+              WHERE checksum IS NOT NULL AND inode IS NOT NULL
+              GROUP BY checksum HAVING COUNT(DISTINCT inode) > 1
+            )
+          )
+          OR
+          -- Fallback for legacy rows without inode data
+          (fi.inode IS NULL
+            AND fi.checksum IN (
+              SELECT checksum FROM file_index
+              WHERE checksum IS NOT NULL AND inode IS NULL
+              GROUP BY checksum HAVING COUNT(*) > 1
+            )
+          )
+        )
+        ${folderFilter}
       ORDER BY fi.checksum, fi.size_bytes DESC
       LIMIT 5000
     `).all(...params) as FileRow[];
