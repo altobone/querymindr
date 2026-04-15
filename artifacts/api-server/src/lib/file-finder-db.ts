@@ -54,6 +54,16 @@ try { db.exec(`ALTER TABLE file_index ADD COLUMN inode INTEGER`); } catch { }
 try { db.exec(`CREATE INDEX IF NOT EXISTS idx_file_index_inode ON file_index (inode)`); } catch { }
 try { db.exec(`ALTER TABLE indexing_jobs ADD COLUMN type TEXT DEFAULT 'full'`); } catch { }
 
+// On startup, clear any jobs that were left in 'running' state from a previous
+// server session — they can never resume, so mark them interrupted.
+db.exec(`
+  UPDATE indexing_jobs
+  SET status = 'interrupted',
+      error_message = 'Server was restarted while this job was running.',
+      completed_at = datetime('now')
+  WHERE status = 'running'
+`);
+
 export interface FileRow {
   id: number;
   path: string;
