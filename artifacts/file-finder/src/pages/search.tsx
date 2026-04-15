@@ -32,6 +32,7 @@ export default function SearchPage() {
   const [folderResults, setFolderResults] = useState<string[]>([]);
   const [browseReturnQuery, setBrowseReturnQuery] = useState<string>("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
+  const [aiConfigured, setAiConfigured] = useState(false);
 
   const { data: foldersData } = useGetFolders();
   const { toast } = useToast();
@@ -47,6 +48,19 @@ export default function SearchPage() {
     const t = setTimeout(() => setDebouncedQuery(query), 300);
     return () => clearTimeout(t);
   }, [query]);
+
+  // Check whether a Claude API key has been configured.
+  // AI features are hidden entirely when it hasn't been — no error messages.
+  useEffect(() => {
+    fetch("/api/file-finder/ai-config")
+      .then((r) => r.json())
+      .then((data) => {
+        const configured = !!data.configured;
+        setAiConfigured(configured);
+        if (!configured) setIsAiSearch(false);
+      })
+      .catch(() => { setAiConfigured(false); setIsAiSearch(false); });
+  }, []);
 
   const { data: searchResults, isFetching: isSearchLoading, refetch: refetchSearch } = useSearchFiles({
     query: isAiSearch ? undefined : debouncedQuery,
@@ -166,21 +180,23 @@ export default function SearchPage() {
         <div className="border-b border-border bg-card p-6 flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold tracking-tight">Search</h2>
-            <div className="flex items-center gap-3">
-              <Label htmlFor="ai-mode" className="text-sm font-medium flex items-center gap-2 cursor-pointer">
-                <Search className="w-4 h-4 text-muted-foreground" />
-                Standard
-              </Label>
-              <Switch
-                id="ai-mode"
-                checked={isAiSearch}
-                onCheckedChange={setIsAiSearch}
-              />
-              <Label htmlFor="ai-mode" className="text-sm font-medium flex items-center gap-2 cursor-pointer">
-                <Sparkles className="w-4 h-4 text-primary" />
-                AI Magic
-              </Label>
-            </div>
+            {aiConfigured && (
+              <div className="flex items-center gap-3">
+                <Label htmlFor="ai-mode" className="text-sm font-medium flex items-center gap-2 cursor-pointer">
+                  <Search className="w-4 h-4 text-muted-foreground" />
+                  Standard
+                </Label>
+                <Switch
+                  id="ai-mode"
+                  checked={isAiSearch}
+                  onCheckedChange={setIsAiSearch}
+                />
+                <Label htmlFor="ai-mode" className="text-sm font-medium flex items-center gap-2 cursor-pointer">
+                  <Sparkles className="w-4 h-4 text-primary" />
+                  AI Magic
+                </Label>
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-3">
@@ -510,29 +526,32 @@ export default function SearchPage() {
                   </div>
                 </div>
 
-                <Separator />
-
-                <div className="space-y-3">
-                  <h4 className="font-medium text-sm flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-primary" />
-                    AI Summary
-                  </h4>
-                  {selectedFile.ai_summary ? (
-                    <p className="text-sm text-muted-foreground leading-relaxed bg-secondary/50 p-3 rounded-md border border-border/50">
-                      {selectedFile.ai_summary}
-                    </p>
-                  ) : (
-                    <Button 
-                      variant="outline" 
-                      className="w-full justify-start text-muted-foreground h-auto py-3"
-                      onClick={() => handleSummarize(selectedFile.id)}
-                      disabled={summarizeFile.isPending}
-                    >
-                      <TerminalSquare className="w-4 h-4 mr-2" />
-                      {summarizeFile.isPending ? "Generating summary..." : "Generate AI Summary"}
-                    </Button>
-                  )}
-                </div>
+                {aiConfigured && (
+                  <>
+                    <Separator />
+                    <div className="space-y-3">
+                      <h4 className="font-medium text-sm flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-primary" />
+                        AI Summary
+                      </h4>
+                      {selectedFile.ai_summary ? (
+                        <p className="text-sm text-muted-foreground leading-relaxed bg-secondary/50 p-3 rounded-md border border-border/50">
+                          {selectedFile.ai_summary}
+                        </p>
+                      ) : (
+                        <Button 
+                          variant="outline" 
+                          className="w-full justify-start text-muted-foreground h-auto py-3"
+                          onClick={() => handleSummarize(selectedFile.id)}
+                          disabled={summarizeFile.isPending}
+                        >
+                          <TerminalSquare className="w-4 h-4 mr-2" />
+                          {summarizeFile.isPending ? "Generating summary..." : "Generate AI Summary"}
+                        </Button>
+                      )}
+                    </div>
+                  </>
+                )}
 
                 <Separator />
 
