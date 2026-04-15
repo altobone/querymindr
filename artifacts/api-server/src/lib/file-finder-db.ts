@@ -49,18 +49,10 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_file_index_size      ON file_index (size_bytes);
 `);
 
-// Safe migration: add inode column to existing databases that predate this schema,
-// then create its index. Both are no-ops if already present.
-try {
-  db.exec(`ALTER TABLE file_index ADD COLUMN inode INTEGER`);
-} catch {
-  // Column already exists — nothing to do
-}
-try {
-  db.exec(`CREATE INDEX IF NOT EXISTS idx_file_index_inode ON file_index (inode)`);
-} catch {
-  // Index already exists — nothing to do
-}
+// Safe migrations — each is a no-op if the column/index already exists
+try { db.exec(`ALTER TABLE file_index ADD COLUMN inode INTEGER`); } catch { }
+try { db.exec(`CREATE INDEX IF NOT EXISTS idx_file_index_inode ON file_index (inode)`); } catch { }
+try { db.exec(`ALTER TABLE indexing_jobs ADD COLUMN type TEXT DEFAULT 'full'`); } catch { }
 
 export interface FileRow {
   id: number;
@@ -81,6 +73,7 @@ export interface FileRow {
 export interface JobRow {
   id: number;
   status: string;
+  type: string | null;
   root_dir: string | null;
   total_files: number;
   processed_files: number;

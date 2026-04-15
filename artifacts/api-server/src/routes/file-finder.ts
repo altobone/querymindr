@@ -197,6 +197,140 @@ async function runIndexing(rootDir: string, jobId: number) {
   }
 }
 
+async function runIncrementalIndexing(rootDir: string, jobId: number) {
+  isIndexingRunning = true;
+  try {
+    db.prepare("UPDATE indexing_jobs SET status = 'running', started_at = ? WHERE id = ?").run(new Date().toISOString(), jobId);
+
+    // Find the last successful completion time
+    const lastJob = db.prepare(
+      "SELECT completed_at FROM indexing_jobs WHERE status = 'completed' AND id != ? ORDER BY completed_at DESC LIMIT 1"
+    ).get(jobId) as { completed_at: string } | undefined;
+    const lastCompletedMs = lastJob ? new Date(lastJob.completed_at).getTime() : 0;
+
+    // Phase 1: list all directories on disk and find which ones changed
+    const allDirs = await fg(["**/"], {
+      cwd: rootDir,
+      absolute: true,
+      onlyDirectories: true,
+      followSymbolicLinks: false,
+      ignore: ["**/node_modules/**", "**/.git/**", "**/.DS_Store", "**/.TemporaryItems/**", "**/.Spotlight-V100/**", "**/.fseventsd/**", "**/.Trashes/**"],
+      dot: false,
+      suppressErrors: true,
+    });
+    allDirs.push(rootDir);
+
+    const changedDirs: string[] = [];
+    for (const dir of allDirs) {
+      try {
+        const s = fs.statSync(dir);
+        if (s.mtime.getTime() >= lastCompletedMs) changedDirs.push(dir);
+      } catch { }
+    }
+
+    if (changedDirs.length === 0) {
+      db.prepare("UPDATE indexing_jobs SET status = 'completed', completed_at = ?, processed_files = 0 WHERE id = ?")
+        .run(new Date().toISOString(), jobId);
+      return;
+    }
+
+    // Phase 2: for each changed dir, compare disk vs DB to find new/changed/removed files
+    const toProcess: Array<{ filePath: string; stat: fs.Stats }> = [];
+    const toRemove: string[] = [];
+
+    const upsert = db.prepare(`
+      INSERT INTO file_index (path, name, extension, size_bytes, modified_at, created_at, folder, content_text, ai_summary, checksum, inode, indexed_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, datetime('now'))
+      ON CONFLICT(path) DO UPDATE SET
+        name = excluded.name, extension = excluded.extension, size_bytes = excluded.size_bytes,
+        modified_at = excluded.modified_at, created_at = excluded.created_at, folder = excluded.folder,
+        content_text = excluded.content_text, checksum = excluded.checksum, inode = excluded.inode,
+        indexed_at = datetime('now')
+    `);
+
+    for (const dir of changedDirs) {
+      // Load DB entries for this directory
+      const dbFiles = new Map<string, { modified_at: string | null; inode: number | null }>();
+      const dbRows = db.prepare("SELECT path, modified_at, inode FROM file_index WHERE folder = ?").all(dir) as { path: string; modified_at: string | null; inode: number | null }[];
+      for (const r of dbRows) dbFiles.set(r.path, { modified_at: r.modified_at, inode: r.inode });
+
+      // List files currently on disk in this directory (one level only)
+      let diskEntries: fs.Dirent[] = [];
+      try { diskEntries = fs.readdirSync(dir, { withFileTypes: true }); } catch { continue; }
+
+      const diskPaths = new Set<string>();
+      for (const entry of diskEntries) {
+        if (!entry.isFile()) continue;
+        const filePath = path.join(dir, entry.name);
+        diskPaths.add(filePath);
+
+        try {
+          const stat = fs.statSync(filePath);
+          const existing = dbFiles.get(filePath);
+          if (!existing) {
+            toProcess.push({ filePath, stat }); // New file
+          } else {
+            const mtime = stat.mtime.toISOString();
+            if (mtime !== existing.modified_at || stat.ino !== existing.inode) {
+              toProcess.push({ filePath, stat }); // Modified file
+            }
+          }
+        } catch { }
+      }
+
+      // Files in DB for this dir that are no longer on disk
+      for (const [dbPath] of dbFiles) {
+        if (!diskPaths.has(dbPath)) toRemove.push(dbPath);
+      }
+    }
+
+    // Phase 3: remove stale entries
+    for (const p of toRemove) {
+      db.prepare("DELETE FROM file_index WHERE path = ?").run(p);
+    }
+
+    // Phase 4: process new / changed files
+    const total = toProcess.length;
+    db.prepare("UPDATE indexing_jobs SET total_files = ? WHERE id = ?").run(total, jobId);
+
+    let processed = 0;
+    for (const { filePath, stat } of toProcess) {
+      try {
+        if (!stat.isFile()) { processed++; continue; }
+        const ext = path.extname(filePath).toLowerCase();
+        const name = path.basename(filePath);
+        const folder = path.dirname(filePath);
+
+        let checksum: string | null = null;
+        try { if (stat.size <= 100 * 1024 * 1024) checksum = await computeChecksum(filePath); } catch { }
+
+        let content: string | null = null;
+        try { content = await extractTextContent(filePath, ext); } catch { }
+
+        const inode = stat.ino ?? null;
+
+        db.exec("BEGIN");
+        try {
+          upsert.run(filePath, name, ext || "(no extension)", stat.size, stat.mtime.toISOString(), (stat.birthtime || stat.mtime).toISOString(), folder, content, checksum, inode);
+          db.exec("COMMIT");
+        } catch { db.exec("ROLLBACK"); }
+      } catch { }
+
+      processed++;
+      db.prepare("UPDATE indexing_jobs SET processed_files = ? WHERE id = ?").run(processed, jobId);
+    }
+
+    db.prepare("UPDATE indexing_jobs SET status = 'completed', completed_at = ?, processed_files = ? WHERE id = ?")
+      .run(new Date().toISOString(), processed, jobId);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    db.prepare("UPDATE indexing_jobs SET status = 'failed', error_message = ?, completed_at = ? WHERE id = ?")
+      .run(msg, new Date().toISOString(), jobId);
+  } finally {
+    isIndexingRunning = false;
+  }
+}
+
 router.get("/file-finder/ai-config", (_req: Request, res: Response) => {
   const envKeySet = !!process.env.ANTHROPIC_API_KEY;
   const runtimeKeySet = !!runtimeApiKey;
@@ -517,12 +651,12 @@ router.post("/file-finder/index/start", async (req: Request, res: Response) => {
     }
 
     const now = new Date().toISOString();
-    const result = db.prepare("INSERT INTO indexing_jobs (status, root_dir, total_files, processed_files, started_at, created_at) VALUES ('running', ?, 0, 0, ?, ?)").run(rootDir, now, now);
+    const result = db.prepare("INSERT INTO indexing_jobs (status, type, root_dir, total_files, processed_files, started_at, created_at) VALUES ('running', 'full', ?, 0, 0, ?, ?)").run(rootDir, now, now);
     const jobId = Number(result.lastInsertRowid);
 
     runIndexing(rootDir, jobId).catch(() => { });
 
-    res.json({ status: "running", root_dir: rootDir, total_files: 0, processed_files: 0, started_at: now, completed_at: null, error_message: null });
+    res.json({ status: "running", type: "full", root_dir: rootDir, total_files: 0, processed_files: 0, started_at: now, completed_at: null, error_message: null });
   } catch (err: unknown) {
     res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
   }
@@ -531,8 +665,30 @@ router.post("/file-finder/index/start", async (req: Request, res: Response) => {
 router.get("/file-finder/index/status", async (req: Request, res: Response) => {
   try {
     const job = db.prepare("SELECT * FROM indexing_jobs ORDER BY id DESC LIMIT 1").get() as JobRow | undefined;
-    if (!job) return res.json({ status: "idle", root_dir: null, total_files: 0, processed_files: 0, started_at: null, completed_at: null, error_message: null });
-    res.json({ status: job.status, root_dir: job.root_dir, total_files: job.total_files, processed_files: job.processed_files, started_at: job.started_at, completed_at: job.completed_at, error_message: job.error_message });
+    if (!job) return res.json({ status: "idle", type: null, root_dir: null, total_files: 0, processed_files: 0, started_at: null, completed_at: null, error_message: null });
+    res.json({ status: job.status, type: job.type ?? "full", root_dir: job.root_dir, total_files: job.total_files, processed_files: job.processed_files, started_at: job.started_at, completed_at: job.completed_at, error_message: job.error_message });
+  } catch (err: unknown) {
+    res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+  }
+});
+
+router.post("/file-finder/index/incremental", async (req: Request, res: Response) => {
+  try {
+    const { root_dir } = req.body;
+    const rootDir = root_dir || ROOT_DIR;
+
+    if (isIndexingRunning) {
+      const job = db.prepare("SELECT * FROM indexing_jobs ORDER BY id DESC LIMIT 1").get() as JobRow | undefined;
+      return res.json({ status: "running", type: job?.type ?? "incremental", root_dir: job?.root_dir ?? rootDir, total_files: job?.total_files ?? 0, processed_files: job?.processed_files ?? 0, started_at: job?.started_at ?? null, completed_at: null, error_message: null });
+    }
+
+    const now = new Date().toISOString();
+    const result = db.prepare("INSERT INTO indexing_jobs (status, type, root_dir, total_files, processed_files, started_at, created_at) VALUES ('running', 'incremental', ?, 0, 0, ?, ?)").run(rootDir, now, now);
+    const jobId = Number(result.lastInsertRowid);
+
+    runIncrementalIndexing(rootDir, jobId).catch(() => { });
+
+    res.json({ status: "running", type: "incremental", root_dir: rootDir, total_files: 0, processed_files: 0, started_at: now, completed_at: null, error_message: null });
   } catch (err: unknown) {
     res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
   }

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { HardDrive, Activity, AlertTriangle, CheckCircle2, Cpu, KeyRound, Eye, EyeOff } from "lucide-react";
+import { HardDrive, Activity, AlertTriangle, CheckCircle2, Cpu, KeyRound, Eye, EyeOff, Zap, RefreshCw } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -63,6 +63,7 @@ export default function SettingsPage() {
   const { data: statusData, refetch: refetchStatus } = useGetIndexStatus();
   const { data: statsData, refetch: refetchStats } = useGetIndexStats();
   const startIndex = useStartIndexing();
+  const [incrementalRunning, setIncrementalRunning] = useState(false);
 
   const isRunning = statusData?.status === "running";
 
@@ -74,6 +75,7 @@ export default function SettingsPage() {
       }, 2000);
     } else {
       refetchStats();
+      setIncrementalRunning(false);
     }
     return () => clearInterval(interval);
   }, [isRunning, refetchStatus, refetchStats]);
@@ -82,10 +84,27 @@ export default function SettingsPage() {
     if (!rootDir) return;
     startIndex.mutate({ data: { root_dir: rootDir } }, {
       onSuccess: () => {
-        toast({ title: "Indexing Started", description: `Scanning ${rootDir}...` });
+        toast({ title: "Full Re-index Started", description: `Scanning all files in ${rootDir}...` });
         refetchStatus();
       }
     });
+  };
+
+  const handleIncremental = async () => {
+    if (!rootDir || isRunning) return;
+    setIncrementalRunning(true);
+    try {
+      await fetch("/api/file-finder/index/incremental", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ root_dir: rootDir }),
+      });
+      toast({ title: "Quick Update Started", description: `Scanning only changed folders in ${rootDir}...` });
+      refetchStatus();
+    } catch {
+      toast({ title: "Error", description: "Could not start quick update.", variant: "destructive" });
+      setIncrementalRunning(false);
+    }
   };
 
   const progress = statusData && statusData.total_files > 0 
@@ -206,13 +225,31 @@ export default function SettingsPage() {
                     className="font-mono text-sm"
                   />
                 </div>
-                <Button 
-                  onClick={handleStart} 
-                  disabled={isRunning || !rootDir}
-                  className="w-32"
-                >
-                  {isRunning ? "Running..." : "Start Indexing"}
-                </Button>
+                <div className="flex flex-col gap-2">
+                  <Button
+                    onClick={handleIncremental}
+                    disabled={isRunning || incrementalRunning || !rootDir}
+                    variant="outline"
+                    className="gap-2"
+                  >
+                    <Zap className="w-4 h-4" />
+                    {isRunning && (statusData as { type?: string })?.type === "incremental" ? "Updating..." : "Quick Update"}
+                  </Button>
+                  <Button 
+                    onClick={handleStart} 
+                    disabled={isRunning || !rootDir}
+                    variant="secondary"
+                    className="gap-2"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                    {isRunning && (statusData as { type?: string })?.type === "full" ? "Indexing..." : "Full Re-index"}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="text-sm text-muted-foreground space-y-1">
+                <p><span className="font-medium text-foreground">Quick Update</span> — scans only folders that changed since the last run. Completes in minutes. Use this regularly.</p>
+                <p><span className="font-medium text-foreground">Full Re-index</span> — scans all 1.6M+ files from scratch. Takes several hours. Use only after a major reorganization.</p>
               </div>
 
               {statusData && (
@@ -224,7 +261,9 @@ export default function SettingsPage() {
                         {statusData.status === "completed" && <CheckCircle2 className="w-4 h-4 text-green-500" />}
                         {statusData.status === "failed" && <AlertTriangle className="w-4 h-4 text-destructive" />}
                         {statusData.status === "idle" && <HardDrive className="w-4 h-4 text-muted-foreground" />}
-                        Status: <span className="capitalize">{statusData.status}</span>
+                        {(statusData as { type?: string })?.type === "incremental" ? "Quick Update" : "Full Index"}
+                        {" · "}
+                        <span className="capitalize font-normal text-muted-foreground">{statusData.status}</span>
                       </h4>
                       {statusData.error_message && (
                         <p className="text-xs text-destructive mt-1">{statusData.error_message}</p>
@@ -232,14 +271,20 @@ export default function SettingsPage() {
                     </div>
                     {isRunning && (
                       <div className="text-right">
-                        <span className="text-2xl font-bold font-mono">{Math.round(progress)}%</span>
-                        <p className="text-xs text-muted-foreground">
-                          {statusData.processed_files.toLocaleString()} / {statusData.total_files.toLocaleString()} files
-                        </p>
+                        {statusData.total_files > 0 ? (
+                          <>
+                            <span className="text-2xl font-bold font-mono">{Math.round(progress)}%</span>
+                            <p className="text-xs text-muted-foreground">
+                              {statusData.processed_files.toLocaleString()} / {statusData.total_files.toLocaleString()} files
+                            </p>
+                          </>
+                        ) : (
+                          <p className="text-xs text-muted-foreground animate-pulse">Scanning directories…</p>
+                        )}
                       </div>
                     )}
                   </div>
-                  {isRunning && (
+                  {isRunning && statusData.total_files > 0 && (
                     <Progress value={progress} className="h-2 w-full bg-secondary" />
                   )}
                 </div>
