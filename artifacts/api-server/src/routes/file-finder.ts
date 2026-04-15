@@ -425,23 +425,33 @@ router.get("/file-finder/search", async (req: Request, res: Response) => {
 
     if (query.trim()) {
       const q = query.trim();
-      // Build name/path conditions alongside any existing filters
-      const nameConditions = [...conditions, "(LOWER(name) LIKE LOWER(?) OR LOWER(path) LIKE LOWER(?))"];
-      const nameParams: (string | number)[] = [...params, `%${q}%`, `%${q}%`];
+
+      // Split into individual words so every word must appear in the name or path.
+      // This prevents "tictock talk" from fuzzy-matching unrelated files like
+      // "Stick Alkaloid" just because "alk" appears in both "talk" and "Alkaloid".
+      const words = q.split(/\s+/).filter(Boolean);
+
+      // Build a clause that requires ALL words to match somewhere in name+path:
+      // (name LIKE %w1% OR path LIKE %w1%) AND (name LIKE %w2% OR path LIKE %w2%) ...
+      const wordClauses = words.map(() => "(LOWER(name) LIKE LOWER(?) OR LOWER(path) LIKE LOWER(?))");
+      const wordParams: (string | number)[] = words.flatMap((w) => [`%${w}%`, `%${w}%`]);
+
+      const nameConditions = [...conditions, ...wordClauses];
+      const nameParams: (string | number)[] = [...params, ...wordParams];
       const nameWhere = `WHERE ${nameConditions.join(" AND ")}`;
       const exact = db.prepare(`SELECT * FROM file_index ${nameWhere} ORDER BY ${sortCol} ${order}`).all(...nameParams) as FileRow[];
 
       if (exact.length > 0) {
-        // Exact substring match found — sort so closest matches appear first
+        // Word-match results — sort so files whose name contains the full query first
         allFiles = exact.sort((a, b) => {
-          const aExact = a.name.toLowerCase() === q.toLowerCase() ? 0 : 1;
-          const bExact = b.name.toLowerCase() === q.toLowerCase() ? 0 : 1;
-          return aExact - bExact;
+          const aFull = a.name.toLowerCase().includes(q.toLowerCase()) ? 0 : 1;
+          const bFull = b.name.toLowerCase().includes(q.toLowerCase()) ? 0 : 1;
+          return aFull - bFull;
         });
       } else {
-        // Fall back to fuzzy search only when nothing matched exactly
+        // Fall back to Fuse.js fuzzy search with a tight threshold to reduce false positives
         const base = db.prepare(`SELECT * FROM file_index ${where} ORDER BY ${sortCol} ${order}`).all(...params) as FileRow[];
-        const fuse = new Fuse(base, { keys: ["name", "folder", "content_text"], threshold: 0.3, includeScore: true });
+        const fuse = new Fuse(base, { keys: ["name", "folder", "content_text"], threshold: 0.2, includeScore: true });
         allFiles = fuse.search(q).map((r) => r.item);
       }
     } else {
