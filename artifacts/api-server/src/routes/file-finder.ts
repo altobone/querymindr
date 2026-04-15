@@ -103,13 +103,19 @@ async function extractTextContent(filePath: string, ext: string): Promise<string
   }
 }
 
-async function computeChecksum(filePath: string): Promise<string> {
+async function computeChecksum(filePath: string, timeoutMs = 30_000): Promise<string> {
   return new Promise((resolve, reject) => {
     const hash = crypto.createHash("sha256");
     const stream = fs.createReadStream(filePath);
+
+    const timer = setTimeout(() => {
+      stream.destroy();
+      reject(new Error(`Checksum timeout after ${timeoutMs}ms: ${filePath}`));
+    }, timeoutMs);
+
     stream.on("data", (d) => hash.update(d));
-    stream.on("end", () => resolve(hash.digest("hex")));
-    stream.on("error", reject);
+    stream.on("end", () => { clearTimeout(timer); resolve(hash.digest("hex")); });
+    stream.on("error", (err) => { clearTimeout(timer); reject(err); });
   });
 }
 
@@ -227,13 +233,26 @@ async function runIncrementalIndexing(rootDir: string, jobId: number) {
     });
     allDirs.push(rootDir);
 
-    const changedDirs: string[] = [];
+    // Directories that contain files with no inode recorded must always be rescanned,
+    // regardless of mtime — these are records from before inode tracking was added.
+    const nullInodeFolders = new Set<string>(
+      (db.prepare("SELECT DISTINCT folder FROM file_index WHERE inode IS NULL").all() as { folder: string }[])
+        .map(r => r.folder)
+    );
+
+    const changedDirSet = new Set<string>();
     for (const dir of allDirs) {
       try {
         const s = fs.statSync(dir);
-        if (s.mtime.getTime() >= lastCompletedMs) changedDirs.push(dir);
+        if (s.mtime.getTime() >= lastCompletedMs || nullInodeFolders.has(dir)) {
+          changedDirSet.add(dir);
+        }
       } catch { }
     }
+    // Also include any null-inode folders that fast-glob might have missed
+    for (const folder of nullInodeFolders) changedDirSet.add(folder);
+
+    const changedDirs = [...changedDirSet];
 
     if (changedDirs.length === 0) {
       db.prepare("UPDATE indexing_jobs SET status = 'completed', completed_at = ?, processed_files = 0 WHERE id = ?")
