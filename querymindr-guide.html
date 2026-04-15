@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Querymindr — Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap');
+
+  :root {
+    --bg: #0d0d0d;
+    --surface: #141414;
+    --surface2: #1a1a1a;
+    --border: #262626;
+    --accent: #e8ff47;
+    --accent2: #47d4ff;
+    --text: #e8e8e8;
+    --text-muted: #666;
+    --text-dim: #999;
+    --mac: #ff9500;
+    --linux: #47d4ff;
+    --radius: 6px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    padding: 0;
+  }
+
+  .qm-guide {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 48px 24px 64px;
+  }
+
+  /* ── Header ── */
+  .qm-header {
+    margin-bottom: 56px;
+  }
+
+  .qm-wordmark {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .qm-wordmark::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .qm-title {
+    font-size: clamp(32px, 5vw, 52px);
+    font-weight: 800;
+    line-height: 1.08;
+    letter-spacing: -0.03em;
+    color: #fff;
+    margin-bottom: 20px;
+  }
+
+  .qm-intro {
+    font-size: 15px;
+    color: var(--text-dim);
+    line-height: 1.75;
+    max-width: 640px;
+    margin-bottom: 12px;
+  }
+
+  .qm-subtitle {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    color: var(--text-muted);
+    font-weight: 300;
+    margin-top: 16px;
+  }
+
+  /* ── Section ── */
+  .qm-section {
+    margin-bottom: 48px;
+  }
+
+  .qm-section-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .qm-section-label::before {
+    content: '';
+    width: 20px;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .qm-section-title {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: #fff;
+    margin-bottom: 16px;
+  }
+
+  .qm-section-intro {
+    font-size: 14px;
+    color: var(--text-muted);
+    margin-bottom: 24px;
+    line-height: 1.7;
+  }
+
+  /* ── Cards ── */
+  .qm-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin-bottom: 16px;
+  }
+
+  .qm-card-title {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .tag-mac { color: var(--mac); }
+  .tag-linux { color: var(--linux); }
+  .tag-both { color: var(--accent); }
+
+  .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .dot-mac { background: var(--mac); }
+  .dot-linux { background: var(--linux); }
+  .dot-both { background: var(--accent); }
+
+  /* ── Feature grid ── */
+  .qm-feature-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 0;
+  }
+
+  @media (max-width: 600px) {
+    .qm-feature-grid { grid-template-columns: 1fr; }
+  }
+
+  .qm-feature-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+  }
+
+  .qm-feature-icon {
+    font-size: 18px;
+    margin-bottom: 8px;
+  }
+
+  .qm-feature-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 5px;
+  }
+
+  .qm-feature-desc {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+
+  .qm-feature-badge {
+    display: inline-block;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 3px;
+    margin-top: 8px;
+  }
+
+  .badge-free {
+    background: rgba(232,255,71,0.08);
+    border: 1px solid rgba(232,255,71,0.18);
+    color: var(--accent);
+  }
+
+  .badge-ai {
+    background: rgba(71,212,255,0.08);
+    border: 1px solid rgba(71,212,255,0.18);
+    color: var(--linux);
+  }
+
+  /* ── Steps ── */
+  .qm-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .qm-step {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+  }
+
+  .qm-step-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--accent);
+    background: rgba(232, 255, 71, 0.07);
+    border: 1px solid rgba(232, 255, 71, 0.15);
+    border-radius: 4px;
+    min-width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 1px;
+    flex-shrink: 0;
+  }
+
+  .qm-step-body {
+    flex: 1;
+    color: var(--text-dim);
+    font-size: 14px;
+    line-height: 1.65;
+  }
+
+  .qm-step-body strong {
+    color: var(--text);
+    font-weight: 600;
+  }
+
+  /* ── Code blocks ── */
+  .qm-code {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    font-weight: 300;
+    background: #0a0a0a;
+    border: 1px solid var(--border);
+    border-left: 2px solid var(--accent);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    margin: 10px 0;
+    color: #c8d8a0;
+    overflow-x: auto;
+    white-space: pre;
+    line-height: 1.7;
+  }
+
+  .qm-code.linux {
+    border-left-color: var(--linux);
+    color: #9dd5f0;
+  }
+
+  /* ── Inline code ── */
+  code {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 1px 6px;
+    color: var(--text-dim);
+  }
+
+  /* ── Note / callout ── */
+  .qm-note {
+    background: rgba(232, 255, 71, 0.04);
+    border: 1px solid rgba(232, 255, 71, 0.12);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    font-size: 13px;
+    color: var(--text-muted);
+    margin: 14px 0;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+
+  .qm-note-icon {
+    color: var(--accent);
+    font-size: 14px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  /* ── Two-column OS layout ── */
+  .qm-os-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  @media (max-width: 640px) {
+    .qm-os-grid { grid-template-columns: 1fr; }
+  }
+
+  /* ── Search mode rows ── */
+  .qm-modes {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .qm-mode {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .qm-mode-head {
+    background: var(--surface2);
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .qm-mode-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: #fff;
+    flex: 1;
+  }
+
+  .qm-mode-body {
+    padding: 14px 18px 18px;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    font-size: 13.5px;
+    color: var(--text-dim);
+    line-height: 1.7;
+  }
+
+  .qm-mode-body ul {
+    list-style: none;
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .qm-mode-body ul li {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+
+  .qm-mode-body ul li::before {
+    content: '—';
+    color: var(--border);
+    flex-shrink: 0;
+  }
+
+  .qm-mode-body strong {
+    color: var(--text);
+  }
+
+  /* ── Settings grid ── */
+  .qm-settings {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .qm-setting {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .qm-setting-head {
+    background: var(--surface2);
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s;
+  }
+
+  .qm-setting-head:hover {
+    background: #202020;
+  }
+
+  .qm-setting-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--accent);
+    background: rgba(232, 255, 71, 0.08);
+    border: 1px solid rgba(232, 255, 71, 0.15);
+    border-radius: 4px;
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .qm-setting-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #fff;
+    flex: 1;
+  }
+
+  .qm-setting-toggle {
+    font-size: 11px;
+    color: var(--text-muted);
+    transition: transform 0.2s;
+  }
+
+  .qm-setting-toggle.open {
+    transform: rotate(90deg);
+  }
+
+  .qm-setting-body {
+    padding: 16px 18px 18px;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    font-size: 13.5px;
+    color: var(--text-dim);
+    line-height: 1.7;
+    display: none;
+  }
+
+  .qm-setting-body.open {
+    display: block;
+  }
+
+  .qm-setting-body ul {
+    list-style: none;
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .qm-setting-body ul li {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+
+  .qm-setting-body ul li::before {
+    content: '—';
+    color: var(--border);
+    flex-shrink: 0;
+  }
+
+  .qm-setting-body strong {
+    color: var(--text);
+  }
+
+  /* ── Commands table ── */
+  .qm-commands {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    margin-top: 12px;
+  }
+
+  .qm-commands tr {
+    border-bottom: 1px solid var(--border);
+  }
+
+  .qm-commands tr:last-child { border-bottom: none; }
+
+  .qm-commands td {
+    padding: 10px 14px;
+    vertical-align: top;
+  }
+
+  .qm-commands td:first-child {
+    color: var(--linux);
+    white-space: pre;
+    width: 52%;
+    background: rgba(71, 212, 255, 0.04);
+  }
+
+  .qm-commands td:last-child {
+    color: var(--text-muted);
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+  }
+
+  /* ── URL box ── */
+  .qm-url-box {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    background: #0a0a0a;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin: 16px 0;
+  }
+
+  .qm-url-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    background: var(--surface2);
+    padding: 12px 14px;
+    border-right: 1px solid var(--border);
+    white-space: nowrap;
+  }
+
+  .qm-url-value {
+    font-family: 'DM Mono', monospace;
+    font-size: 14px;
+    color: var(--accent);
+    padding: 12px 16px;
+    letter-spacing: 0.02em;
+  }
+
+  /* ── Divider ── */
+  .qm-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 48px 0;
+  }
+
+  /* ── Scroll reveal ── */
+  .reveal {
+    opacity: 0;
+    transform: translateY(18px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+
+  .reveal.visible {
+    opacity: 1;
+    transform: none;
+  }
+</style>
+</head>
+<body>
+
+<div class="qm-guide">
+
+  <!-- Header -->
+  <div class="qm-header reveal">
+    <div class="qm-wordmark">Querymindr</div>
+    <h1 class="qm-title">Installation &amp;<br>User Guide</h1>
+    <p class="qm-intro">Querymindr is a local search tool for large external drives. It indexes every file on your drive — names, folders, sizes, and types — into a fast database that lives on your Mac. You search it through a browser window: type a word, a partial title, or a rough description, and Querymindr finds the matching files in seconds, no matter how many terabytes you have. Because everything runs on your own machine, your files never leave your computer.</p>
+    <p class="qm-subtitle">// mac · linux · local file search + optional ai</p>
+  </div>
+
+  <!-- What you can do -->
+  <div class="qm-section reveal">
+    <div class="qm-section-label">Overview</div>
+    <div class="qm-section-title">What You Can Do</div>
+    <div class="qm-feature-grid">
+
+      <div class="qm-feature-card">
+        <div class="qm-feature-icon">🔍</div>
+        <div class="qm-feature-name">Keyword Search</div>
+        <div class="qm-feature-desc">Type any word or phrase and instantly find matching files across your entire drive. Results are ranked by relevance.</div>
+        <div class="qm-feature-badge badge-free">No API key needed</div>
+      </div>
+
+      <div class="qm-feature-card">
+        <div class="qm-feature-icon">〰️</div>
+        <div class="qm-feature-name">Fuzzy / Typo Tolerance</div>
+        <div class="qm-feature-desc">Misspell a word and Querymindr still finds it. If no exact match exists, it automatically searches for close matches — "trambones" finds "trombones."</div>
+        <div class="qm-feature-badge badge-free">No API key needed</div>
+      </div>
+
+      <div class="qm-feature-card">
+        <div class="qm-feature-icon">📂</div>
+        <div class="qm-feature-name">Folder Search &amp; Browse</div>
+        <div class="qm-feature-desc">Search for a folder by name, then click into it to see everything inside. Use the Reveal in Finder button to jump straight to any item in macOS Finder.</div>
+        <div class="qm-feature-badge badge-free">No API key needed</div>
+      </div>
+
+      <div class="qm-feature-card">
+        <div class="qm-feature-icon">🔗</div>
+        <div class="qm-feature-name">Find More Like This</div>
+        <div class="qm-feature-desc">Click any file to open its detail panel, then hit "Find More Like This" to instantly search for other files with a similar name or in related folders.</div>
+        <div class="qm-feature-badge badge-free">No API key needed</div>
+      </div>
+
+      <div class="qm-feature-card">
+        <div class="qm-feature-icon">✨</div>
+        <div class="qm-feature-name">AI Magic Search</div>
+        <div class="qm-feature-desc">Describe what you're looking for in plain language — "choir sessions from last year" or "80s synth demos" — and Claude translates it into a smart search.</div>
+        <div class="qm-feature-badge badge-ai">Requires Claude API key</div>
+      </div>
+
+      <div class="qm-feature-card">
+        <div class="qm-feature-icon">📝</div>
+        <div class="qm-feature-name">AI File Summary</div>
+        <div class="qm-feature-desc">Select any file and generate a one-paragraph AI summary of what it likely contains, based on its name, path, and type. Useful for identifying files before opening them.</div>
+        <div class="qm-feature-badge badge-ai">Requires Claude API key</div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="qm-divider"></div>
+
+  <!-- Before you start -->
+  <div class="qm-section reveal">
+    <div class="qm-section-label">Prerequisites</div>
+    <div class="qm-section-title">Before You Start</div>
+    <div class="qm-card">
+      <div class="qm-card-title"><span class="dot dot-both"></span><span class="tag-both">Mac &amp; Linux</span></div>
+      <div class="qm-steps">
+        <div class="qm-step">
+          <div class="qm-step-num">1</div>
+          <div class="qm-step-body">Download and install <strong>Node.js</strong> from <code>nodejs.org</code> — choose the <strong>LTS</strong> version.</div>
+        </div>
+        <div class="qm-step">
+          <div class="qm-step-num">2</div>
+          <div class="qm-step-body">Open Terminal and install <strong>pnpm</strong>:<div class="qm-code">npm install -g pnpm</div></div>
+        </div>
+        <div class="qm-step">
+          <div class="qm-step-num">3</div>
+          <div class="qm-step-body"><strong>Connect and mount your external drive</strong> before running the installer.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- OS Installation -->
+  <div class="qm-section reveal">
+    <div class="qm-section-label">Installation</div>
+    <div class="qm-section-title">Platform Setup</div>
+    <div class="qm-os-grid">
+
+      <!-- Mac -->
+      <div class="qm-card">
+        <div class="qm-card-title"><span class="dot dot-mac"></span><span class="tag-mac">macOS</span></div>
+        <div class="qm-steps">
+          <div class="qm-step">
+            <div class="qm-step-num" style="color:var(--mac);background:rgba(255,149,0,0.07);border-color:rgba(255,149,0,0.15);">1</div>
+            <div class="qm-step-body"><strong>Optional:</strong> Install Xcode command-line tools for the menu bar icon:<div class="qm-code" style="border-left-color:var(--mac);color:#f0c080;">xcode-select --install</div>Skip if Xcode is already installed.</div>
+          </div>
+          <div class="qm-step">
+            <div class="qm-step-num" style="color:var(--mac);background:rgba(255,149,0,0.07);border-color:rgba(255,149,0,0.15);">2</div>
+            <div class="qm-step-body">Place <code>querymindr-release.tar.gz</code> in your <strong>Downloads</strong> folder.</div>
+          </div>
+          <div class="qm-step">
+            <div class="qm-step-num" style="color:var(--mac);background:rgba(255,149,0,0.07);border-color:rgba(255,149,0,0.15);">3</div>
+            <div class="qm-step-body">Run in Terminal:<div class="qm-code" style="border-left-color:var(--mac);color:#f0c080;">cd ~/Downloads && tar -xzf querymindr-release.tar.gz && cd querymindr-release && bash install-querymindr.sh</div></div>
+          </div>
+        </div>
+        <div class="qm-note" style="border-color:rgba(255,149,0,0.15);background:rgba(255,149,0,0.04);">
+          <span class="qm-note-icon" style="color:var(--mac);">⌘</span>
+          <span>After install, Querymindr opens in your browser automatically and starts at every login. A <strong>magnifying glass icon</strong> appears in your menu bar.</span>
+        </div>
+      </div>
+
+      <!-- Linux -->
+      <div class="qm-card">
+        <div class="qm-card-title"><span class="dot dot-linux"></span><span class="tag-linux">Linux</span></div>
+        <div class="qm-steps">
+          <div class="qm-step">
+            <div class="qm-step-num" style="color:var(--linux);background:rgba(71,212,255,0.07);border-color:rgba(71,212,255,0.15);">1</div>
+            <div class="qm-step-body">Place <code>querymindr-release.tar.gz</code> in your <strong>home folder</strong>.</div>
+          </div>
+          <div class="qm-step">
+            <div class="qm-step-num" style="color:var(--linux);background:rgba(71,212,255,0.07);border-color:rgba(71,212,255,0.15);">2</div>
+            <div class="qm-step-body">Run in Terminal — replace the path with your actual drive location:<div class="qm-code linux">cd ~ && tar -xzf querymindr-release.tar.gz && cd querymindr-release && ROOT_DIR=/media/yourname/drivename bash install-querymindr-linux.sh</div></div>
+          </div>
+        </div>
+        <div class="qm-note" style="border-color:rgba(71,212,255,0.12);background:rgba(71,212,255,0.04);">
+          <span class="qm-note-icon" style="color:var(--linux);">ℹ</span>
+          <span>Runs as a background service that starts automatically at login.</span>
+        </div>
+        <p style="font-size:13px;color:var(--text-muted);margin-top:14px;margin-bottom:8px;font-weight:600;">Useful commands</p>
+        <table class="qm-commands">
+          <tr><td>systemctl --user status file-finder</td><td>Check if running</td></tr>
+          <tr><td>systemctl --user stop file-finder</td><td>Stop the service</td></tr>
+          <tr><td>systemctl --user start file-finder</td><td>Start it again</td></tr>
+          <tr><td>journalctl --user -u file-finder -f</td><td>View live logs</td></tr>
+        </table>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Opening the app -->
+  <div class="qm-section reveal">
+    <div class="qm-section-label">Access</div>
+    <div class="qm-section-title">Opening Querymindr</div>
+    <p style="font-size:14px;color:var(--text-dim);margin-bottom:4px;">Once installed, open your browser and navigate to:</p>
+    <div class="qm-url-box">
+      <span class="qm-url-label">URL</span>
+      <span class="qm-url-value">http://localhost:8080/file-finder/</span>
+    </div>
+    <div class="qm-note">
+      <span class="qm-note-icon">★</span>
+      <span><strong>Bookmark this page.</strong> Querymindr only works on your own computer — it is not accessible from the internet.</span>
+    </div>
+  </div>
+
+  <div class="qm-divider"></div>
+
+  <!-- Settings -->
+  <div class="qm-section reveal">
+    <div class="qm-section-label">Configuration</div>
+    <div class="qm-section-title">First-Time Setup</div>
+    <p class="qm-section-intro">Click <strong style="color:var(--text);">Settings</strong> in the left sidebar to configure each option below.</p>
+
+    <div class="qm-settings">
+
+      <div class="qm-setting">
+        <div class="qm-setting-head" onclick="toggleSetting(this)">
+          <div class="qm-setting-num">1</div>
+          <div class="qm-setting-name">Index Engine</div>
+          <div class="qm-setting-toggle">▶</div>
+        </div>
+        <div class="qm-setting-body">
+          Point Querymindr to your drives to build the searchable database.
+          <ul>
+            <li><strong>Root Directories</strong> — add one or more drive paths. Click <code>+</code> or press Enter to add, <code>X</code> to remove. Multiple drives supported.</li>
+            <li><strong>Quick Update</strong> — scans only recently changed folders. Finishes in minutes. Use this regularly to keep the index current.</li>
+            <li><strong>Full Re-index</strong> — scans every file from scratch. Takes several hours on large drives. Use only after a major drive reorganisation.</li>
+          </ul>
+          <div class="qm-note" style="margin-top:12px;">
+            <span class="qm-note-icon">↳</span>
+            <span>The index must complete at least once before search is available. A progress bar shows percentage complete.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="qm-setting">
+        <div class="qm-setting-head" onclick="toggleSetting(this)">
+          <div class="qm-setting-num">2</div>
+          <div class="qm-setting-name">Auto-Update Schedule</div>
+          <div class="qm-setting-toggle">▶</div>
+        </div>
+        <div class="qm-setting-body">
+          Controls how often Querymindr automatically scans for new or changed files.
+          <ul>
+            <li><strong>Disabled</strong> — never runs automatically; use the buttons manually</li>
+            <li><strong>Every hour</strong> — keeps the index very current</li>
+            <li><strong>Every 12 hours</strong> — default (runs at midnight and noon)</li>
+            <li><strong>Every 24 hours</strong> — once a day</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="qm-setting">
+        <div class="qm-setting-head" onclick="toggleSetting(this)">
+          <div class="qm-setting-num">3</div>
+          <div class="qm-setting-name">Checksum File Size Limit</div>
+          <div class="qm-setting-toggle">▶</div>
+        </div>
+        <div class="qm-setting-body">
+          Controls which files get fingerprinted for duplicate detection. Larger limits catch more duplicates but increase index time.
+          <ul>
+            <li><strong>100 MB</strong> — default; covers most audio tracks</li>
+            <li><strong>250 MB</strong> — covers stems and rendered mixes</li>
+            <li><strong>500 MB</strong> — covers most video exports</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="qm-setting">
+        <div class="qm-setting-head" onclick="toggleSetting(this)">
+          <div class="qm-setting-num">4</div>
+          <div class="qm-setting-name">Claude API Key <span style="font-size:11px;font-weight:400;color:var(--text-muted);margin-left:8px;">— optional, unlocks AI features</span></div>
+          <div class="qm-setting-toggle">▶</div>
+        </div>
+        <div class="qm-setting-body">
+          Adding a Claude API key unlocks AI Magic Search and AI File Summaries. Both features are completely hidden in the app until a key is saved — you won't see any error messages or broken buttons without one.
+          <br><br>
+          To get a key: go to <code>console.anthropic.com</code>, sign up, create a key, paste it into the <strong>Claude API Key</strong> field, and click <strong>Save Key</strong>. The AI features will appear immediately.
+          <div class="qm-note" style="margin-top:12px;">
+            <span class="qm-note-icon">↳</span>
+            <span>Querymindr is fully usable without a key. Keyword search, fuzzy matching, folder browsing, and Find More Like This all work with no API required.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="qm-setting">
+        <div class="qm-setting-head" onclick="toggleSetting(this)">
+          <div class="qm-setting-num">5</div>
+          <div class="qm-setting-name">AI Model <span style="font-size:11px;font-weight:400;color:var(--text-muted);margin-left:8px;">— only shown with API key</span></div>
+          <div class="qm-setting-toggle">▶</div>
+        </div>
+        <div class="qm-setting-body">
+          <ul>
+            <li><strong>Claude Haiku</strong> — faster and cheaper; great for most searches</li>
+            <li><strong>Claude Sonnet</strong> — more powerful; better for complex or vague queries</li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="qm-divider"></div>
+
+  <!-- How to search -->
+  <div class="qm-section reveal">
+    <div class="qm-section-label">Using the App</div>
+    <div class="qm-section-title">How to Search</div>
+    <p class="qm-section-intro">Type in the search bar at the top of the page. Results appear as you type. Use the tabs and filters on the left to narrow results by file type, size, or date.</p>
+
+    <div class="qm-modes">
+
+      <div class="qm-mode">
+        <div class="qm-mode-head">
+          <div class="qm-feature-badge badge-free" style="margin:0;">Standard</div>
+          <div class="qm-mode-name">Keyword Search</div>
+        </div>
+        <div class="qm-mode-body">
+          The default mode. Type any word or combination of words and Querymindr searches file names across your entire indexed drive. Every word you type must appear in the file name — searching <strong>jazz piano 2022</strong> finds files that contain all three words somewhere in their name or path.
+          <ul>
+            <li>Works on partial words — <strong>trom</strong> finds <em>trombone</em>, <em>Trombones_mix.wav</em>, etc.</li>
+            <li>Not case sensitive</li>
+            <li>If nothing matches exactly, Querymindr automatically tries fuzzy matching (see below)</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="qm-mode">
+        <div class="qm-mode-head">
+          <div class="qm-feature-badge badge-free" style="margin:0;">Auto</div>
+          <div class="qm-mode-name">Fuzzy / Typo Tolerance</div>
+        </div>
+        <div class="qm-mode-body">
+          You don't need to do anything to enable this — it kicks in automatically when a keyword search returns zero results. If your query is at least five characters, Querymindr will look for close matches and suggest what you might have meant.
+          <ul>
+            <li><strong>trambones</strong> → finds <em>trombones</em></li>
+            <li><strong>violen</strong> → finds <em>violin</em>, <em>violins</em></li>
+            <li>Shorter queries (under 5 characters) don't use fuzzy matching, to avoid unrelated results</li>
+          </ul>
+          <div class="qm-note" style="margin-top:12px;margin-bottom:0;">
+            <span class="qm-note-icon">↳</span>
+            <span>Fuzzy matching runs entirely on your Mac — no internet or API key required.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="qm-mode">
+        <div class="qm-mode-head">
+          <div class="qm-feature-badge badge-ai" style="margin:0;">AI</div>
+          <div class="qm-mode-name">AI Magic Search</div>
+        </div>
+        <div class="qm-mode-body">
+          When a Claude API key is configured, a toggle appears in the search bar to switch between Standard and AI Magic mode. In AI Magic mode, describe what you're looking for in everyday language and Claude will interpret it into a targeted search.
+          <ul>
+            <li><strong>"80s synth demos recorded in the studio"</strong> → searches for relevant terms and patterns</li>
+            <li><strong>"choir sessions from the Hamilton project"</strong> → breaks out key words and folder names</li>
+            <li>Good for searches where you remember the vibe but not the exact file name</li>
+          </ul>
+          <div class="qm-note" style="margin-top:12px;margin-bottom:0;">
+            <span class="qm-note-icon">↳</span>
+            <span>AI Magic Search sends your query text to Anthropic's servers to generate search terms. File names and paths from results are processed locally.</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Folders -->
+  <div class="qm-section reveal">
+    <div class="qm-section-label">Using the App</div>
+    <div class="qm-section-title">Folder Search &amp; Browse</div>
+    <p class="qm-section-intro">Switch to the <strong style="color:var(--text);">Folders</strong> tab to search by folder name instead of file name.</p>
+    <div class="qm-card">
+      <div class="qm-steps">
+        <div class="qm-step">
+          <div class="qm-step-num">1</div>
+          <div class="qm-step-body">Click the <strong>Folders</strong> tab and type a folder name. Results show only folders whose name contains your search words — not subfolders with unrelated names.</div>
+        </div>
+        <div class="qm-step">
+          <div class="qm-step-num">2</div>
+          <div class="qm-step-body">Click any folder row to <strong>browse its contents</strong>. A breadcrumb trail at the top lets you navigate back. Your original search is saved so you return to it when you exit.</div>
+        </div>
+        <div class="qm-step">
+          <div class="qm-step-num">3</div>
+          <div class="qm-step-body">Click <strong>Reveal in Finder</strong> on any folder or file to jump directly to that item in macOS Finder — no copying paths or manual navigation required.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- File detail panel -->
+  <div class="qm-section reveal">
+    <div class="qm-section-label">Using the App</div>
+    <div class="qm-section-title">File Detail Panel</div>
+    <p class="qm-section-intro">Click any file in the results list to open a detail panel on the right with more information and actions.</p>
+    <div class="qm-card">
+      <div class="qm-steps">
+        <div class="qm-step">
+          <div class="qm-step-num">→</div>
+          <div class="qm-step-body"><strong>File info</strong> — name, full path, size, type, and date last modified.</div>
+        </div>
+        <div class="qm-step">
+          <div class="qm-step-num">→</div>
+          <div class="qm-step-body"><strong>Reveal in Finder</strong> — opens the file's location in macOS Finder immediately.</div>
+        </div>
+        <div class="qm-step">
+          <div class="qm-step-num">→</div>
+          <div class="qm-step-body"><strong>Find More Like This</strong> — triggers a new search for files with similar names or from the same folder. Good for finding related takes, alternate versions, or project files.</div>
+        </div>
+        <div class="qm-step">
+          <div class="qm-step-num">→</div>
+          <div class="qm-step-body"><strong>AI File Summary</strong> <span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--linux);">requires API key</span> — generates a short description of what the file likely contains based on its name, location, and type. The summary is saved so it only needs to be generated once per file.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  function toggleSetting(head) {
+    const body = head.nextElementSibling;
+    const toggle = head.querySelector('.qm-setting-toggle');
+    body.classList.toggle('open');
+    toggle.classList.toggle('open');
+  }
+
+  // Scroll reveal
+  const reveals = document.querySelectorAll('.reveal');
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach((e, i) => {
+      if (e.isIntersecting) {
+        setTimeout(() => e.target.classList.add('visible'), i * 60);
+        io.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.1 });
+  reveals.forEach(el => io.observe(el));
+</script>
+
+</body>
+</html>
