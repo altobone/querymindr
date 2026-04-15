@@ -730,4 +730,39 @@ router.get("/file-finder/stats", async (req: Request, res: Response) => {
   }
 });
 
+// ---------------------------------------------------------------
+// Scheduled auto-index: Quick Update at midnight and noon daily
+// ---------------------------------------------------------------
+function msUntilNext(hour: number): number {
+  const now = new Date();
+  const next = new Date(now);
+  next.setHours(hour, 0, 0, 0);
+  if (next <= now) next.setDate(next.getDate() + 1);
+  return next.getTime() - now.getTime();
+}
+
+async function runScheduledIncremental() {
+  if (isIndexingRunning) return;
+  const now = new Date().toISOString();
+  try {
+    const result = db.prepare(
+      "INSERT INTO indexing_jobs (status, type, root_dir, total_files, processed_files, started_at, created_at) VALUES ('running', 'incremental', ?, 0, 0, ?, ?)"
+    ).run(ROOT_DIR, now, now);
+    runIncrementalIndexing(ROOT_DIR, Number(result.lastInsertRowid)).catch(() => {});
+  } catch { }
+}
+
+function scheduleAutoIndex() {
+  const INTERVAL_MS = 12 * 60 * 60 * 1000; // 12 hours
+
+  // Fire at the next midnight, then every 12 hours (hitting midnight & noon)
+  const msToMidnight = msUntilNext(0);
+  setTimeout(() => {
+    runScheduledIncremental();
+    setInterval(runScheduledIncremental, INTERVAL_MS);
+  }, msToMidnight);
+}
+
+scheduleAutoIndex();
+
 export default router;
