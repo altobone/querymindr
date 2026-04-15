@@ -37,6 +37,7 @@ cp -r artifacts/api-server/dist/* "$RELEASE_DIR/server/"
 cp -r artifacts/file-finder/dist/public/* "$RELEASE_DIR/public/"
 cp menu-bar/MenuBar.swift "$RELEASE_DIR/menu-bar/"
 cp install-querymindr.sh "$RELEASE_DIR/"
+cp build-pkg.sh "$RELEASE_DIR/"
 echo "     Done."
 
 echo "4/4  Packaging..."
