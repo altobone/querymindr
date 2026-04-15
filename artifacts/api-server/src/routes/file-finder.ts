@@ -441,12 +441,22 @@ router.get("/file-finder/search", async (req: Request, res: Response) => {
       const nameWhere = `WHERE ${nameConditions.join(" AND ")}`;
       const exact = db.prepare(`SELECT * FROM file_index ${nameWhere} ORDER BY ${sortCol} ${order}`).all(...nameParams) as FileRow[];
 
-      // Sort so files whose name contains the full query phrase first
-      allFiles = exact.sort((a, b) => {
-        const aFull = a.name.toLowerCase().includes(q.toLowerCase()) ? 0 : 1;
-        const bFull = b.name.toLowerCase().includes(q.toLowerCase()) ? 0 : 1;
-        return aFull - bFull;
-      });
+      if (exact.length > 0) {
+        // Sort so files whose name contains the full query phrase rank first
+        allFiles = exact.sort((a, b) => {
+          const aFull = a.name.toLowerCase().includes(q.toLowerCase()) ? 0 : 1;
+          const bFull = b.name.toLowerCase().includes(q.toLowerCase()) ? 0 : 1;
+          return aFull - bFull;
+        });
+      } else if (q.length >= 5) {
+        // Stage 2: tight fuzzy fallback — only fires when zero exact matches
+        // AND query is long enough that near-misses are meaningful.
+        // Threshold 0.2 catches 1-character typos in long words ("trambones" →
+        // "trombones") but rejects loose matches on short words ("hose" → "home").
+        const base = db.prepare(`SELECT * FROM file_index ${where} ORDER BY ${sortCol} ${order}`).all(...params) as FileRow[];
+        const fuse = new Fuse(base, { keys: ["name"], threshold: 0.2, includeScore: true });
+        allFiles = fuse.search(q).map((r) => r.item);
+      }
     } else {
       allFiles = db.prepare(`SELECT * FROM file_index ${where} ORDER BY ${sortCol} ${order}`).all(...params) as FileRow[];
     }
