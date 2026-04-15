@@ -25,6 +25,17 @@ interface AppConfig {
   api_key?: string;
   auto_index_interval_hours?: number;
   checksum_limit_mb?: number;
+  root_dirs?: string[];
+}
+
+function getRootDirs(): string[] {
+  const saved = readConfigFile().root_dirs;
+  if (saved && saved.length > 0) return saved;
+  return [ROOT_DIR];
+}
+
+function rootDirsLabel(dirs: string[]): string {
+  return dirs.length === 1 ? dirs[0] : "Multiple drives";
 }
 
 function readConfigFile(): AppConfig {
@@ -119,21 +130,10 @@ async function computeChecksum(filePath: string, timeoutMs = 30_000): Promise<st
   });
 }
 
-async function runIndexing(rootDir: string, jobId: number) {
+async function runIndexing(rootDirs: string[], jobId: number) {
   isIndexingRunning = true;
   try {
     db.prepare("UPDATE indexing_jobs SET status = 'running', started_at = ? WHERE id = ?").run(new Date().toISOString(), jobId);
-
-    // Stream files one at a time — never loads all 1.6M paths into memory at once
-    const fileStream = fg.stream(["**/*"], {
-      cwd: rootDir,
-      absolute: true,
-      onlyFiles: true,
-      followSymbolicLinks: false,
-      ignore: ["**/node_modules/**", "**/.git/**", "**/.DS_Store", "**/.TemporaryItems/**", "**/.Spotlight-V100/**", "**/.fseventsd/**", "**/.Trashes/**"],
-      dot: false,
-      suppressErrors: true,
-    });
 
     const upsert = db.prepare(`
       INSERT INTO file_index (path, name, extension, size_bytes, modified_at, created_at, folder, content_text, ai_summary, checksum, inode, indexed_at)
@@ -155,45 +155,54 @@ async function runIndexing(rootDir: string, jobId: number) {
     let processed = 0;
     let progressCounter = 0;
 
-    for await (const entry of fileStream) {
-      const filePath = entry as string;
-      try {
-        const stat = fs.statSync(filePath);
-        if (!stat.isFile()) continue;
+    const streamOpts = {
+      absolute: true,
+      onlyFiles: true,
+      followSymbolicLinks: false,
+      ignore: ["**/node_modules/**", "**/.git/**", "**/.DS_Store", "**/.TemporaryItems/**", "**/.Spotlight-V100/**", "**/.fseventsd/**", "**/.Trashes/**"],
+      dot: false,
+      suppressErrors: true,
+    };
 
-        const ext = path.extname(filePath).toLowerCase();
-        const name = path.basename(filePath);
-        const folder = path.dirname(filePath);
+    // Stream each root drive one at a time
+    for (const rootDir of rootDirs) {
+      const fileStream = fg.stream(["**/*"], { ...streamOpts, cwd: rootDir });
 
-        let checksum: string | null = null;
+      for await (const entry of fileStream) {
+        const filePath = entry as string;
         try {
-          if (stat.size <= checksumLimitMb * 1024 * 1024) {
-            checksum = await computeChecksum(filePath);
-          }
+          const stat = fs.statSync(filePath);
+          if (!stat.isFile()) continue;
+
+          const ext = path.extname(filePath).toLowerCase();
+          const name = path.basename(filePath);
+          const folder = path.dirname(filePath);
+
+          let checksum: string | null = null;
+          try {
+            if (stat.size <= checksumLimitMb * 1024 * 1024) {
+              checksum = await computeChecksum(filePath);
+            }
+          } catch { }
+
+          let content: string | null = null;
+          try { content = await extractTextContent(filePath, ext); } catch { }
+
+          const inode = stat.ino ?? null;
+
+          db.exec("BEGIN");
+          try {
+            upsert.run(filePath, name, ext || "(no extension)", stat.size, stat.mtime.toISOString(), (stat.birthtime || stat.mtime).toISOString(), folder, content, checksum, inode);
+            db.exec("COMMIT");
+          } catch { db.exec("ROLLBACK"); }
         } catch { }
 
-        let content: string | null = null;
-        try {
-          content = await extractTextContent(filePath, ext);
-        } catch { }
-
-        const inode = stat.ino ?? null;
-
-        db.exec("BEGIN");
-        try {
-          upsert.run(filePath, name, ext || "(no extension)", stat.size, stat.mtime.toISOString(), (stat.birthtime || stat.mtime).toISOString(), folder, content, checksum, inode);
-          db.exec("COMMIT");
-        } catch {
-          db.exec("ROLLBACK");
+        processed++;
+        progressCounter++;
+        if (progressCounter >= 100) {
+          db.prepare("UPDATE indexing_jobs SET processed_files = ? WHERE id = ?").run(processed, jobId);
+          progressCounter = 0;
         }
-      } catch { }
-
-      processed++;
-      progressCounter++;
-      // Write progress every 100 files to reduce DB churn
-      if (progressCounter >= 100) {
-        db.prepare("UPDATE indexing_jobs SET processed_files = ? WHERE id = ?").run(processed, jobId);
-        progressCounter = 0;
       }
     }
 
@@ -206,7 +215,7 @@ async function runIndexing(rootDir: string, jobId: number) {
   }
 }
 
-async function runIncrementalIndexing(rootDir: string, jobId: number) {
+async function runIncrementalIndexing(rootDirs: string[], jobId: number) {
   isIndexingRunning = true;
   try {
     db.prepare("UPDATE indexing_jobs SET status = 'running', started_at = ? WHERE id = ?").run(new Date().toISOString(), jobId);
@@ -217,33 +226,34 @@ async function runIncrementalIndexing(rootDir: string, jobId: number) {
     ).get(jobId) as { completed_at: string } | undefined;
     const lastCompletedMs = lastJob ? new Date(lastJob.completed_at).getTime() : 0;
 
-    // Phase 1: list all directories on disk and find which ones changed
-    const allDirs = await fg(["**/"], {
-      cwd: rootDir,
-      absolute: true,
-      onlyDirectories: true,
-      followSymbolicLinks: false,
-      ignore: ["**/node_modules/**", "**/.git/**", "**/.DS_Store", "**/.TemporaryItems/**", "**/.Spotlight-V100/**", "**/.fseventsd/**", "**/.Trashes/**"],
-      dot: false,
-      suppressErrors: true,
-    });
-    allDirs.push(rootDir);
-
-    // Directories that contain files with no inode recorded must always be rescanned,
-    // regardless of mtime — these are records from before inode tracking was added.
+    // Null-inode folders across all drives (pre-inode-tracking records)
     const nullInodeFolders = new Set<string>(
       (db.prepare("SELECT DISTINCT folder FROM file_index WHERE inode IS NULL").all() as { folder: string }[])
         .map(r => r.folder)
     );
 
+    // Phase 1: collect changed dirs across all roots
     const changedDirSet = new Set<string>();
-    for (const dir of allDirs) {
-      try {
-        const s = fs.statSync(dir);
-        if (s.mtime.getTime() >= lastCompletedMs || nullInodeFolders.has(dir)) {
-          changedDirSet.add(dir);
-        }
-      } catch { }
+    for (const rootDir of rootDirs) {
+      const allDirs = await fg(["**/"], {
+        cwd: rootDir,
+        absolute: true,
+        onlyDirectories: true,
+        followSymbolicLinks: false,
+        ignore: ["**/node_modules/**", "**/.git/**", "**/.DS_Store", "**/.TemporaryItems/**", "**/.Spotlight-V100/**", "**/.fseventsd/**", "**/.Trashes/**"],
+        dot: false,
+        suppressErrors: true,
+      });
+      allDirs.push(rootDir);
+
+      for (const dir of allDirs) {
+        try {
+          const s = fs.statSync(dir);
+          if (s.mtime.getTime() >= lastCompletedMs || nullInodeFolders.has(dir)) {
+            changedDirSet.add(dir);
+          }
+        } catch { }
+      }
     }
     // Also include any null-inode folders that fast-glob might have missed
     for (const folder of nullInodeFolders) changedDirSet.add(folder);
@@ -665,21 +675,21 @@ router.get("/file-finder/duplicates", async (req: Request, res: Response) => {
 
 router.post("/file-finder/index/start", async (req: Request, res: Response) => {
   try {
-    const { root_dir } = req.body;
-    const rootDir = root_dir || ROOT_DIR;
+    const rootDirs = getRootDirs();
+    const label = rootDirsLabel(rootDirs);
 
     if (isIndexingRunning) {
       const job = db.prepare("SELECT * FROM indexing_jobs ORDER BY id DESC LIMIT 1").get() as JobRow | undefined;
-      return res.json({ status: "running", root_dir: job?.root_dir ?? rootDir, total_files: job?.total_files ?? 0, processed_files: job?.processed_files ?? 0, started_at: job?.started_at ?? null, completed_at: null, error_message: null });
+      return res.json({ status: "running", root_dir: job?.root_dir ?? label, total_files: job?.total_files ?? 0, processed_files: job?.processed_files ?? 0, started_at: job?.started_at ?? null, completed_at: null, error_message: null });
     }
 
     const now = new Date().toISOString();
-    const result = db.prepare("INSERT INTO indexing_jobs (status, type, root_dir, total_files, processed_files, started_at, created_at) VALUES ('running', 'full', ?, 0, 0, ?, ?)").run(rootDir, now, now);
+    const result = db.prepare("INSERT INTO indexing_jobs (status, type, root_dir, total_files, processed_files, started_at, created_at) VALUES ('running', 'full', ?, 0, 0, ?, ?)").run(label, now, now);
     const jobId = Number(result.lastInsertRowid);
 
-    runIndexing(rootDir, jobId).catch(() => { });
+    runIndexing(rootDirs, jobId).catch(() => { });
 
-    res.json({ status: "running", type: "full", root_dir: rootDir, total_files: 0, processed_files: 0, started_at: now, completed_at: null, error_message: null });
+    res.json({ status: "running", type: "full", root_dir: label, total_files: 0, processed_files: 0, started_at: now, completed_at: null, error_message: null });
   } catch (err: unknown) {
     res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
   }
@@ -697,21 +707,21 @@ router.get("/file-finder/index/status", async (req: Request, res: Response) => {
 
 router.post("/file-finder/index/incremental", async (req: Request, res: Response) => {
   try {
-    const { root_dir } = req.body;
-    const rootDir = root_dir || ROOT_DIR;
+    const rootDirs = getRootDirs();
+    const label = rootDirsLabel(rootDirs);
 
     if (isIndexingRunning) {
       const job = db.prepare("SELECT * FROM indexing_jobs ORDER BY id DESC LIMIT 1").get() as JobRow | undefined;
-      return res.json({ status: "running", type: job?.type ?? "incremental", root_dir: job?.root_dir ?? rootDir, total_files: job?.total_files ?? 0, processed_files: job?.processed_files ?? 0, started_at: job?.started_at ?? null, completed_at: null, error_message: null });
+      return res.json({ status: "running", type: job?.type ?? "incremental", root_dir: job?.root_dir ?? label, total_files: job?.total_files ?? 0, processed_files: job?.processed_files ?? 0, started_at: job?.started_at ?? null, completed_at: null, error_message: null });
     }
 
     const now = new Date().toISOString();
-    const result = db.prepare("INSERT INTO indexing_jobs (status, type, root_dir, total_files, processed_files, started_at, created_at) VALUES ('running', 'incremental', ?, 0, 0, ?, ?)").run(rootDir, now, now);
+    const result = db.prepare("INSERT INTO indexing_jobs (status, type, root_dir, total_files, processed_files, started_at, created_at) VALUES ('running', 'incremental', ?, 0, 0, ?, ?)").run(label, now, now);
     const jobId = Number(result.lastInsertRowid);
 
-    runIncrementalIndexing(rootDir, jobId).catch(() => { });
+    runIncrementalIndexing(rootDirs, jobId).catch(() => { });
 
-    res.json({ status: "running", type: "incremental", root_dir: rootDir, total_files: 0, processed_files: 0, started_at: now, completed_at: null, error_message: null });
+    res.json({ status: "running", type: "incremental", root_dir: label, total_files: 0, processed_files: 0, started_at: now, completed_at: null, error_message: null });
   } catch (err: unknown) {
     res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
   }
@@ -761,16 +771,17 @@ router.get("/file-finder/app-config", (_req: Request, res: Response) => {
   res.json({
     auto_index_interval_hours: config.auto_index_interval_hours ?? 12,
     checksum_limit_mb: config.checksum_limit_mb ?? 100,
-    root_dir: ROOT_DIR,
+    root_dirs: getRootDirs(),
   });
 });
 
 router.post("/file-finder/app-config", (req: Request, res: Response) => {
   try {
     const config = readConfigFile();
-    const { auto_index_interval_hours, checksum_limit_mb } = req.body as Partial<AppConfig>;
+    const { auto_index_interval_hours, checksum_limit_mb, root_dirs } = req.body as Partial<AppConfig>;
     if (auto_index_interval_hours !== undefined) config.auto_index_interval_hours = Number(auto_index_interval_hours);
     if (checksum_limit_mb !== undefined) config.checksum_limit_mb = Number(checksum_limit_mb);
+    if (root_dirs !== undefined && Array.isArray(root_dirs)) config.root_dirs = root_dirs.filter(Boolean);
     writeConfigFile(config);
     res.json({ ok: true });
   } catch (err: unknown) {
@@ -783,12 +794,14 @@ router.post("/file-finder/app-config", (req: Request, res: Response) => {
 // ---------------------------------------------------------------
 async function runScheduledIncremental() {
   if (isIndexingRunning) return;
+  const rootDirs = getRootDirs();
+  const label = rootDirsLabel(rootDirs);
   const now = new Date().toISOString();
   try {
     const result = db.prepare(
       "INSERT INTO indexing_jobs (status, type, root_dir, total_files, processed_files, started_at, created_at) VALUES ('running', 'incremental', ?, 0, 0, ?, ?)"
-    ).run(ROOT_DIR, now, now);
-    runIncrementalIndexing(ROOT_DIR, Number(result.lastInsertRowid)).catch(() => {});
+    ).run(label, now, now);
+    runIncrementalIndexing(rootDirs, Number(result.lastInsertRowid)).catch(() => {});
   } catch { }
 }
 
