@@ -28,6 +28,7 @@ export default function SearchPage() {
   const [fileTypes, setFileTypes] = useState<string>("");
   const [sizeMin, setSizeMin] = useState<string>("");
   const [sizeMax, setSizeMax] = useState<string>("");
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const { data: foldersData } = useGetFolders();
   const { toast } = useToast();
@@ -173,7 +174,7 @@ export default function SearchPage() {
 
           {!isAiSearch && (
             <div className="flex items-center gap-4 text-sm">
-              <Popover>
+              <Popover open={filtersOpen} onOpenChange={setFiltersOpen}>
                 <PopoverTrigger asChild>
                   <Button variant="outline" size="sm" className="h-8 gap-2 border-dashed">
                     <Filter className="w-3.5 h-3.5" />
@@ -216,7 +217,7 @@ export default function SearchPage() {
                         />
                       </div>
                     </div>
-                    <Button size="sm" className="w-full" onClick={() => { handleSearch(); }}>
+                    <Button size="sm" className="w-full" onClick={() => { handleSearch(); setFiltersOpen(false); }}>
                       Apply Filters
                     </Button>
                   </div>
