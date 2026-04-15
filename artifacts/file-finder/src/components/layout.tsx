@@ -20,7 +20,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <HardDrive className="w-4 h-4" />
             </div>
             <div>
-              <h1 className="font-semibold text-sm tracking-tight leading-none mb-1">File Finder</h1>
+              <h1 className="font-semibold text-sm tracking-tight leading-none mb-1">Querymindr</h1>
               <p className="text-xs text-muted-foreground leading-none">Local Search</p>
             </div>
           </div>
