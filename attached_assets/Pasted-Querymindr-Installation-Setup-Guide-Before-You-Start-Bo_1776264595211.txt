@@ -1,0 +1,66 @@
+Querymindr — Installation & Setup Guide
+
+Before You Start (Both Mac & Linux)
+You'll need Node.js and pnpm installed. Do this once:
+Download and install Node.js from nodejs.org (choose the LTS version)
+Open Terminal and run:
+npm install -g pnpm
+Your external drive must be connected and mounted before running the installer.
+
+Mac Installation
+Optional but recommended — adds a menu bar icon:
+xcode-select --install
+Follow the prompt if it appears. Skip this if you already have Xcode installed.
+Install Querymindr:
+Download the Querymindr zip file and unzip it into your Downloads folder
+Open Terminal and run:
+cd ~/Downloads/querymindr && bash install-querymindr.sh
+The installer runs, then opens Querymindr in your browser automatically
+That's it. Querymindr runs silently in the background and starts automatically every time you log in — no Terminal needed after this.
+A magnifying glass icon appears in your menu bar. Click it to open the app or run a Quick Update at any time.
+
+Linux Installation
+Download the Querymindr zip file and unzip it into your home folder
+Open Terminal and run, replacing the path with your actual drive location:
+cd ~/querymindr && ROOT_DIR=/media/yourname/drivename bash install-querymindr-linux.sh
+The installer runs, then opens Querymindr in your browser automatically
+Querymindr runs as a background service and starts automatically at every login.
+Useful commands:
+systemctl --user status file-finder    # check if it's running
+systemctl --user stop file-finder      # stop it
+systemctl --user start file-finder     # start it again
+journalctl --user -u file-finder -f    # view live logs
+
+Opening Querymindr
+Once installed, open your browser and go to:
+http://localhost:8080/file-finder/
+Bookmark this — it's your app. It only works on your own computer; it is not accessible from the internet.
+
+First-Time Setup (Settings Page)
+Click Settings in the left sidebar.
+1. Claude API Key
+Querymindr uses Claude AI for natural language search. You need an API key from Anthropic:
+Go to console.anthropic.com, sign up, and create an API key
+Paste it into the Claude API Key field and click Save Key
+Without this, keyword search still works — only AI search requires it
+2. AI Model
+Claude Haiku — faster and cheaper, great for most searches
+Claude Sonnet — more powerful, better for complex or vague queries
+3. Auto-Update Schedule
+Controls how often Querymindr automatically scans for new or changed files in the background:
+Disabled — never runs automatically; use the buttons manually
+Every hour — keeps the index very current
+Every 12 hours — the default (runs at midnight and noon)
+Every 24 hours — once a day
+4. Checksum File Size Limit
+Controls which files get fingerprinted for duplicate detection. Larger limits catch more duplicates but take longer to index:
+100 MB — default, covers most audio tracks
+250 MB — covers stems and rendered mixes
+500 MB — covers most video exports
+5. Index Engine — Building Your Index
+Point Querymindr to your drive and build the searchable database:
+Enter your drive path in the Root Directory field
+Quick Update — scans only folders that changed recently. Finishes in minutes. Use this regularly.
+Full Re-index — scans every file from scratch. Takes several hours. Use only after a major reorganization of your drive.
+The index must complete at least once before search and duplicate detection are available.
+
