@@ -8,6 +8,7 @@ import Layout from "@/components/layout";
 import SearchPage from "@/pages/search";
 import DuplicatesPage from "@/pages/duplicates";
 import SettingsPage from "@/pages/settings";
+import HelpPage from "@/pages/help";
 import WelcomeScreen, { hasSeenWelcome } from "@/pages/welcome";
 
 const queryClient = new QueryClient();
@@ -22,6 +23,7 @@ function Router() {
           <Route path="/" component={SearchPage} />
           <Route path="/duplicates" component={DuplicatesPage} />
           <Route path="/settings" component={SettingsPage} />
+          <Route path="/help" component={HelpPage} />
           <Route component={NotFound} />
         </Switch>
       </Layout>

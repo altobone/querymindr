@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Search, Copy, Settings } from "lucide-react";
+import { Search, Copy, Settings, HelpCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import logo from "@assets/Queryminder-logo_white_1776223766599.png";
 
@@ -10,6 +10,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     { name: "Search", href: "/", icon: Search },
     { name: "Duplicates", href: "/duplicates", icon: Copy },
     { name: "Settings", href: "/settings", icon: Settings },
+    { name: "Help", href: "/help", icon: HelpCircle },
   ];
 
   return (
