@@ -366,6 +366,7 @@ export default function SettingsPage() {
                         {statusData.status === "running" && <Activity className="w-4 h-4 text-primary animate-pulse" />}
                         {statusData.status === "completed" && <CheckCircle2 className="w-4 h-4 text-green-500" />}
                         {statusData.status === "failed" && <AlertTriangle className="w-4 h-4 text-destructive" />}
+                        {statusData.status === "interrupted" && <AlertTriangle className="w-4 h-4 text-amber-500" />}
                         {statusData.status === "idle" && <HardDrive className="w-4 h-4 text-muted-foreground" />}
                         {(statusData as { type?: string })?.type === "incremental" ? "Quick Update" : "Full Index"}
                         {" · "}
