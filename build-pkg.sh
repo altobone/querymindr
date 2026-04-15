@@ -281,19 +281,21 @@ cat > "$STAGING/resources/welcome.html" << 'WELCOMEHTML'
 <style>
   body { font-family: -apple-system, sans-serif; font-size: 14px; color: #1d1d1f; line-height: 1.6; margin: 0; padding: 20px 24px; }
   h1 { font-size: 20px; font-weight: 700; margin: 0 0 12px; }
-  p { margin: 0 0 12px; color: #3a3a3c; }
-  .step { display: flex; gap: 12px; margin: 12px 0; }
-  .num { font-weight: 700; color: #1d1d1f; min-width: 20px; }
-  .note { background: #f5f5f7; border-radius: 8px; padding: 12px 14px; font-size: 13px; color: #6e6e73; margin-top: 14px; }
+  p { margin: 0 0 10px; color: #3a3a3c; }
+  ol { margin: 10px 0 14px 0; padding-left: 22px; color: #3a3a3c; }
+  ol li { margin-bottom: 8px; }
+  .note { background: #f5f5f7; border-radius: 8px; padding: 12px 14px; font-size: 13px; color: #6e6e73; margin-top: 4px; }
 </style>
 </head>
 <body>
   <h1>Welcome to Querymindr</h1>
   <p>Querymindr is a local search tool for large external drives. It indexes your files and lets you find anything in seconds — entirely on your Mac, with nothing sent to the internet.</p>
   <p><strong>After installation:</strong></p>
-  <div class="step"><span class="num">1.</span><span>Querymindr opens in your browser automatically.</span></div>
-  <div class="step"><span class="num">2.</span><span>A welcome screen walks you through indexing your drive and optional AI setup.</span></div>
-  <div class="step"><span class="num">3.</span><span>A <strong>magnifying glass icon</strong> appears in your menu bar for quick access (requires Xcode Command Line Tools).</span></div>
+  <ol>
+    <li>Querymindr opens in your browser automatically.</li>
+    <li>A welcome screen walks you through indexing your drive and optional AI setup.</li>
+    <li>A <strong>magnifying glass icon</strong> appears in your menu bar for quick access (requires Xcode Command Line Tools).</li>
+  </ol>
   <div class="note">Querymindr runs as a background service and starts automatically every time you log in. No Terminal needed.</div>
 </body>
 </html>
