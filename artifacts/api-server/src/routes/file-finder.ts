@@ -746,30 +746,24 @@ router.get("/file-finder/folder-search", async (req: Request, res: Response) => 
     if (!q.trim()) return res.json({ folders: [] });
 
     const words = q.trim().split(/\s+/).filter(Boolean);
-    const conditions = words.map(() => "LOWER(folder) LIKE LOWER(?)");
-    const params = words.map((w) => `%${w}%`);
 
-    // Pull all folder paths that contain the query words anywhere in the path.
-    // We then post-process to find the shallowest folder SEGMENT whose name
-    // matches the query — e.g. "drone" in path /Volumes/Thunderbay/Drone footage/sub
-    // yields /Volumes/Thunderbay/Drone footage, not the subfolder.
+    // Extract the folder NAME (last path segment) using SQLite string functions.
+    // Formula: SUBSTR(folder, LENGTH(folder) - INSTR('X' || REVERSE(folder), '/') + 3)
+    //   - REVERSE(folder) puts the last '/' near the front
+    //   - Prepending 'X' ensures INSTR always finds a '/' (handles no-slash edge case)
+    //   - Result: only the last segment, e.g. "76 Trombones" not the full path
+    // This prevents false matches from numeric folders like "114767" containing "76"
+    // as a substring, or from ancestor path segments.
+    const folderNameExpr = `SUBSTR(folder, LENGTH(folder) - INSTR('X' || REVERSE(folder), '/') + 3)`;
+    const nameClauses = words.map(() => `LOWER(${folderNameExpr}) LIKE LOWER(?)`);
+    const nameParams = words.map((w) => `%${w}%`);
+
+    // ORDER BY LENGTH(folder) returns shallower (canonical) folders first.
     const rows = db.prepare(
-      `SELECT DISTINCT folder FROM file_index WHERE ${conditions.join(" AND ")} ORDER BY folder LIMIT 2000`
-    ).all(...params) as { folder: string }[];
+      `SELECT DISTINCT folder FROM file_index WHERE ${nameClauses.join(" AND ")} ORDER BY LENGTH(folder), folder LIMIT 50`
+    ).all(...nameParams) as { folder: string }[];
 
-    const matchingFolders = new Set<string>();
-    for (const { folder } of rows) {
-      const parts = folder.split("/");
-      for (let i = 0; i < parts.length; i++) {
-        const segment = parts[i];
-        if (words.every((w) => segment.toLowerCase().includes(w.toLowerCase()))) {
-          matchingFolders.add(parts.slice(0, i + 1).join("/"));
-          break; // Only the shallowest matching ancestor
-        }
-      }
-    }
-
-    res.json({ folders: [...matchingFolders].sort().slice(0, 50) });
+    res.json({ folders: rows.map((r) => r.folder) });
   } catch (err: unknown) {
     res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
   }
