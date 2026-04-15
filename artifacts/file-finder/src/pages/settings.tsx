@@ -385,8 +385,15 @@ export default function SettingsPage() {
                               {statusData.processed_files.toLocaleString()} / {statusData.total_files.toLocaleString()} files
                             </p>
                           </>
+                        ) : statusData.processed_files > 0 ? (
+                          <>
+                            <span className="text-2xl font-bold font-mono animate-pulse">…</span>
+                            <p className="text-xs text-muted-foreground">
+                              {statusData.processed_files.toLocaleString()} files indexed
+                            </p>
+                          </>
                         ) : (
-                          <p className="text-xs text-muted-foreground animate-pulse">Scanning directories…</p>
+                          <p className="text-xs text-muted-foreground animate-pulse">Scanning…</p>
                         )}
                       </div>
                     )}

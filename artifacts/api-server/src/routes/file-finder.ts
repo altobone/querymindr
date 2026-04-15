@@ -124,7 +124,8 @@ async function runIndexing(rootDir: string, jobId: number) {
   try {
     db.prepare("UPDATE indexing_jobs SET status = 'running', started_at = ? WHERE id = ?").run(new Date().toISOString(), jobId);
 
-    const entries = await fg(["**/*"], {
+    // Stream files one at a time — never loads all 1.6M paths into memory at once
+    const fileStream = fg.stream(["**/*"], {
       cwd: rootDir,
       absolute: true,
       onlyFiles: true,
@@ -133,9 +134,6 @@ async function runIndexing(rootDir: string, jobId: number) {
       dot: false,
       suppressErrors: true,
     });
-
-    const totalFiles = entries.length;
-    db.prepare("UPDATE indexing_jobs SET total_files = ? WHERE id = ?").run(totalFiles, jobId);
 
     const upsert = db.prepare(`
       INSERT INTO file_index (path, name, extension, size_bytes, modified_at, created_at, folder, content_text, ai_summary, checksum, inode, indexed_at)
@@ -153,55 +151,53 @@ async function runIndexing(rootDir: string, jobId: number) {
         indexed_at = datetime('now')
     `);
 
+    const checksumLimitMb = readConfigFile().checksum_limit_mb ?? 100;
     let processed = 0;
-    const batchSize = 50;
+    let progressCounter = 0;
 
-    for (let i = 0; i < entries.length; i += batchSize) {
-      const batch = entries.slice(i, i + batchSize);
+    for await (const entry of fileStream) {
+      const filePath = entry as string;
+      try {
+        const stat = fs.statSync(filePath);
+        if (!stat.isFile()) continue;
 
-      // Process each file individually so progress updates are frequent
-      for (const filePath of batch) {
+        const ext = path.extname(filePath).toLowerCase();
+        const name = path.basename(filePath);
+        const folder = path.dirname(filePath);
+
+        let checksum: string | null = null;
         try {
-          const stat = fs.statSync(filePath);
-          if (!stat.isFile()) { processed++; continue; }
-
-          const ext = path.extname(filePath).toLowerCase();
-          const name = path.basename(filePath);
-          const folder = path.dirname(filePath);
-
-          // Checksum files up to the configured limit (default 100 MB)
-          const checksumLimitMb = readConfigFile().checksum_limit_mb ?? 100;
-          let checksum: string | null = null;
-          try {
-            if (stat.size <= checksumLimitMb * 1024 * 1024) {
-              checksum = await computeChecksum(filePath);
-            }
-          } catch { }
-
-          // Extract text content for supported types
-          let content: string | null = null;
-          try {
-            content = await extractTextContent(filePath, ext);
-          } catch { }
-
-          const inode = stat.ino ?? null;
-
-          db.exec("BEGIN");
-          try {
-            upsert.run(filePath, name, ext || "(no extension)", stat.size, stat.mtime.toISOString(), (stat.birthtime || stat.mtime).toISOString(), folder, content, checksum, inode);
-            db.exec("COMMIT");
-          } catch (txErr) {
-            db.exec("ROLLBACK");
+          if (stat.size <= checksumLimitMb * 1024 * 1024) {
+            checksum = await computeChecksum(filePath);
           }
         } catch { }
 
-        processed++;
-        // Update progress after every file
+        let content: string | null = null;
+        try {
+          content = await extractTextContent(filePath, ext);
+        } catch { }
+
+        const inode = stat.ino ?? null;
+
+        db.exec("BEGIN");
+        try {
+          upsert.run(filePath, name, ext || "(no extension)", stat.size, stat.mtime.toISOString(), (stat.birthtime || stat.mtime).toISOString(), folder, content, checksum, inode);
+          db.exec("COMMIT");
+        } catch {
+          db.exec("ROLLBACK");
+        }
+      } catch { }
+
+      processed++;
+      progressCounter++;
+      // Write progress every 100 files to reduce DB churn
+      if (progressCounter >= 100) {
         db.prepare("UPDATE indexing_jobs SET processed_files = ? WHERE id = ?").run(processed, jobId);
+        progressCounter = 0;
       }
     }
 
-    db.prepare("UPDATE indexing_jobs SET status = 'completed', completed_at = ?, processed_files = ? WHERE id = ?").run(new Date().toISOString(), processed, jobId);
+    db.prepare("UPDATE indexing_jobs SET status = 'completed', completed_at = ?, processed_files = ?, total_files = ? WHERE id = ?").run(new Date().toISOString(), processed, processed, jobId);
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
     db.prepare("UPDATE indexing_jobs SET status = 'failed', error_message = ?, completed_at = ? WHERE id = ?").run(msg, new Date().toISOString(), jobId);
