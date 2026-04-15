@@ -441,19 +441,13 @@ router.get("/file-finder/search", async (req: Request, res: Response) => {
       const nameWhere = `WHERE ${nameConditions.join(" AND ")}`;
       const exact = db.prepare(`SELECT * FROM file_index ${nameWhere} ORDER BY ${sortCol} ${order}`).all(...nameParams) as FileRow[];
 
-      if (exact.length > 0) {
-        // Word-match results — sort so files whose name contains the full query first
-        allFiles = exact.sort((a, b) => {
-          const aFull = a.name.toLowerCase().includes(q.toLowerCase()) ? 0 : 1;
-          const bFull = b.name.toLowerCase().includes(q.toLowerCase()) ? 0 : 1;
-          return aFull - bFull;
-        });
-      } else {
-        // Fall back to Fuse.js fuzzy search with a tight threshold to reduce false positives
-        const base = db.prepare(`SELECT * FROM file_index ${where} ORDER BY ${sortCol} ${order}`).all(...params) as FileRow[];
-        const fuse = new Fuse(base, { keys: ["name", "folder", "content_text"], threshold: 0.2, includeScore: true });
-        allFiles = fuse.search(q).map((r) => r.item);
-      }
+      // Sort so files whose name contains the full query string appear first,
+      // then files that match only via folder/path.
+      allFiles = exact.sort((a, b) => {
+        const aFull = a.name.toLowerCase().includes(q.toLowerCase()) ? 0 : 1;
+        const bFull = b.name.toLowerCase().includes(q.toLowerCase()) ? 0 : 1;
+        return aFull - bFull;
+      });
     } else {
       allFiles = db.prepare(`SELECT * FROM file_index ${where} ORDER BY ${sortCol} ${order}`).all(...params) as FileRow[];
     }
