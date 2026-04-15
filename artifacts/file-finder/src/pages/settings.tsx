@@ -355,7 +355,7 @@ export default function SettingsPage() {
 
               <div className="text-sm text-muted-foreground space-y-1">
                 <p><span className="font-medium text-foreground">Quick Update</span> — scans only folders that changed since the last run. Completes in minutes. Use this regularly.</p>
-                <p><span className="font-medium text-foreground">Full Re-index</span> — scans all 1.6M+ files from scratch. Takes several hours. Use only after a major reorganization.</p>
+                <p><span className="font-medium text-foreground">Full Re-index</span> — scans all {statsData?.total_files ? statsData.total_files.toLocaleString() + " files" : "files"} from scratch. Takes several hours. Use only after a major reorganization.</p>
               </div>
 
               {statusData && (
