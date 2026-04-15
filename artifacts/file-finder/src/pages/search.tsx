@@ -252,6 +252,39 @@ export default function SearchPage() {
             </div>
           )}
           
+          {/* Active filter chips */}
+          {((folderScope !== "all") || (!isAiSearch && (fileTypes || sizeMin || sizeMax))) && (
+            <div className="flex flex-wrap gap-2">
+              {folderScope !== "all" && (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20">
+                  <Folder className="w-3 h-3 shrink-0" />
+                  {folderScope.split("/").pop() ?? folderScope}
+                  <button onClick={() => setFolderScope("all")} className="hover:opacity-60 transition-opacity ml-0.5" aria-label="Remove folder filter">
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              )}
+              {!isAiSearch && fileTypes && (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20">
+                  <FileText className="w-3 h-3 shrink-0" />
+                  Type: {fileTypes}
+                  <button onClick={() => setFileTypes("")} className="hover:opacity-60 transition-opacity ml-0.5" aria-label="Remove file type filter">
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              )}
+              {!isAiSearch && (sizeMin || sizeMax) && (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20">
+                  <HardDrive className="w-3 h-3 shrink-0" />
+                  Size: {sizeMin ? formatBytes(parseInt(sizeMin)) : "any"} – {sizeMax ? formatBytes(parseInt(sizeMax)) : "any"}
+                  <button onClick={() => { setSizeMin(""); setSizeMax(""); }} className="hover:opacity-60 transition-opacity ml-0.5" aria-label="Remove size filter">
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              )}
+            </div>
+          )}
+
           {aiExplanation && (
             <div className="text-sm bg-primary/10 text-primary px-4 py-3 rounded-md border border-primary/20 flex gap-3 items-start">
               <Sparkles className="w-4 h-4 mt-0.5 shrink-0" />
