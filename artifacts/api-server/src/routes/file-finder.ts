@@ -738,6 +738,25 @@ router.post("/file-finder/index/incremental", async (req: Request, res: Response
   }
 });
 
+router.get("/file-finder/folder-search", async (req: Request, res: Response) => {
+  try {
+    const { q = "" } = req.query as Record<string, string>;
+    if (!q.trim()) return res.json({ folders: [] });
+
+    const words = q.trim().split(/\s+/).filter(Boolean);
+    const conditions = words.map(() => "LOWER(folder) LIKE LOWER(?)");
+    const params = words.map((w) => `%${w}%`);
+
+    const rows = db.prepare(
+      `SELECT DISTINCT folder FROM file_index WHERE ${conditions.join(" AND ")} ORDER BY folder LIMIT 50`
+    ).all(...params) as { folder: string }[];
+
+    res.json({ folders: rows.map((r) => r.folder) });
+  } catch (err: unknown) {
+    res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+  }
+});
+
 router.get("/file-finder/folders", async (req: Request, res: Response) => {
   try {
     const rows = db.prepare("SELECT DISTINCT folder FROM file_index LIMIT 200").all() as { folder: string }[];

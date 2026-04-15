@@ -29,6 +29,7 @@ export default function SearchPage() {
   const [sizeMin, setSizeMin] = useState<string>("");
   const [sizeMax, setSizeMax] = useState<string>("");
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [folderResults, setFolderResults] = useState<string[]>([]);
 
   const { data: foldersData } = useGetFolders();
   const { toast } = useToast();
@@ -63,6 +64,7 @@ export default function SearchPage() {
   const handleSearch = () => {
     setSimilarResults(null);
     if (isAiSearch && query) {
+      setFolderResults([]);
       aiSearch.mutate({
         data: {
           description: query,
@@ -76,8 +78,24 @@ export default function SearchPage() {
         }
       });
     } else {
+      // Fetch matching folders in parallel with file results
+      if (query.trim()) {
+        fetch(`/api/file-finder/folder-search?q=${encodeURIComponent(query.trim())}`)
+          .then((r) => r.json())
+          .then((data) => setFolderResults(data.folders || []))
+          .catch(() => setFolderResults([]));
+      } else {
+        setFolderResults([]);
+      }
       refetchSearch();
     }
+  };
+
+  const handleBrowseFolder = (folderPath: string) => {
+    setFolderScope(folderPath);
+    setQuery("");
+    setFolderResults([]);
+    setSimilarResults(null);
   };
 
   const handleOpenInFinder = (path: string) => {
@@ -295,54 +313,106 @@ export default function SearchPage() {
         </div>
 
         <ScrollArea className="flex-1 bg-background">
-          <div className="p-6">
-            {files.length === 0 && !isLoading && query && (
-              <div className="text-center py-20 text-muted-foreground">
-                No files found matching your query.
+          <div className="p-6 space-y-6">
+            {/* Folder results */}
+            {folderResults.length > 0 && (
+              <div className="space-y-2">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                  <Folder className="w-3.5 h-3.5" />
+                  Folders ({folderResults.length})
+                </h3>
+                <div className="space-y-1">
+                  {folderResults.map((f) => {
+                    const parts = f.split("/");
+                    const name = parts[parts.length - 1] || f;
+                    const parent = parts.slice(0, -1).join("/");
+                    return (
+                      <div
+                        key={f}
+                        className="flex items-center justify-between p-3 rounded-lg border border-border bg-card hover:bg-secondary/50 transition-colors"
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="w-9 h-9 rounded bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+                            <Folder className="w-4 h-4 text-primary" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium">{name}</p>
+                            <p className="text-xs text-muted-foreground font-mono truncate">{parent}</p>
+                          </div>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="shrink-0 ml-4 gap-1.5"
+                          onClick={() => handleBrowseFolder(f)}
+                        >
+                          Browse
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
+
+            {/* File results */}
+            {(files.length > 0 || (folderResults.length === 0 && !isLoading && query)) && (
+              <div className="space-y-2">
+                {folderResults.length > 0 && files.length > 0 && (
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                    <FileText className="w-3.5 h-3.5" />
+                    Files ({files.length})
+                  </h3>
+                )}
+                {files.length === 0 && !isLoading && query && (
+                  <div className="text-center py-20 text-muted-foreground">
+                    No files found matching your query.
+                  </div>
+                )}
             
-            {files.length > 0 && (
-              <div className="space-y-1">
-                {files.map((file) => (
-                  <div
-                    key={file.id}
-                    onClick={() => setSelectedFile(file)}
-                    className={cn(
-                      "flex items-center justify-between p-3 rounded-lg cursor-pointer transition-colors border border-transparent",
-                      selectedFile?.id === file.id
-                        ? "bg-secondary border-border"
-                        : "hover:bg-secondary/50"
-                    )}
-                  >
-                    <div className="flex items-center gap-4 min-w-0 flex-1">
-                      <div className="w-10 h-10 rounded bg-card border flex items-center justify-center shrink-0 text-muted-foreground">
-                        <FileIcon className="w-5 h-5" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium">{file.name}</p>
-                        <p className="text-xs text-muted-foreground font-mono break-all mt-0.5 leading-relaxed">{file.path}</p>
-                        <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
-                          <span>{formatDate(file.modified_at)}</span>
-                          <span>&bull;</span>
-                          <span>{formatBytes(file.size_bytes)}</span>
+                {files.length > 0 && (
+                  <div className="space-y-1">
+                    {files.map((file) => (
+                      <div
+                        key={file.id}
+                        onClick={() => setSelectedFile(file)}
+                        className={cn(
+                          "flex items-center justify-between p-3 rounded-lg cursor-pointer transition-colors border border-transparent",
+                          selectedFile?.id === file.id
+                            ? "bg-secondary border-border"
+                            : "hover:bg-secondary/50"
+                        )}
+                      >
+                        <div className="flex items-center gap-4 min-w-0 flex-1">
+                          <div className="w-10 h-10 rounded bg-card border flex items-center justify-center shrink-0 text-muted-foreground">
+                            <FileIcon className="w-5 h-5" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-medium">{file.name}</p>
+                            <p className="text-xs text-muted-foreground font-mono break-all mt-0.5 leading-relaxed">{file.path}</p>
+                            <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
+                              <span>{formatDate(file.modified_at)}</span>
+                              <span>&bull;</span>
+                              <span>{formatBytes(file.size_bytes)}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="shrink-0 pl-4">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOpenInFinder(file.path);
+                            }}
+                          >
+                            Reveal
+                          </Button>
                         </div>
                       </div>
-                    </div>
-                    <div className="shrink-0 pl-4">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleOpenInFinder(file.path);
-                        }}
-                      >
-                        Reveal
-                      </Button>
-                    </div>
+                    ))}
                   </div>
-                ))}
+                )}
               </div>
             )}
           </div>
