@@ -286,10 +286,9 @@ export default function SearchPage() {
                         <FileIcon className="w-5 h-5" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium truncate">{file.name}</p>
+                        <p className="text-sm font-medium">{file.name}</p>
+                        <p className="text-xs text-muted-foreground font-mono break-all mt-0.5 leading-relaxed">{file.path}</p>
                         <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
-                          <span className="truncate max-w-[200px]">{file.folder}</span>
-                          <span>&bull;</span>
                           <span>{formatDate(file.modified_at)}</span>
                           <span>&bull;</span>
                           <span>{formatBytes(file.size_bytes)}</span>
