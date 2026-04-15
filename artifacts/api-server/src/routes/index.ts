@@ -1,10 +1,10 @@
 import { Router, type IRouter } from "express";
 import healthRouter from "./health";
-import fileFinderRouter from "./file-finder";
+import querymindrRouter from "./querymindr";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
-router.use(fileFinderRouter);
+router.use(querymindrRouter);
 
 export default router;

@@ -7,7 +7,7 @@ import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 const rawPort = process.env.PORT || "5173";
 const port = Number(rawPort);
 
-const basePath = process.env.BASE_PATH || "/file-finder/";
+const basePath = process.env.BASE_PATH || "/querymindr/";
 
 export default defineConfig({
   base: basePath,

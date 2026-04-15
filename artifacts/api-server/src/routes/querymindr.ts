@@ -9,7 +9,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import fg from "fast-glob";
 import Fuse from "fuse.js";
 import mime from "mime-types";
-import { db, FileRow, JobRow } from "../lib/file-finder-db";
+import { db, FileRow, JobRow } from "../lib/querymindr-db";
 
 const router: IRouter = Router();
 const execAsync = promisify(exec);
@@ -18,7 +18,7 @@ const ROOT_DIR = process.env.ROOT_DIR || process.cwd();
 const VALID_MODELS = ["claude-haiku-4-5", "claude-sonnet-4-5"];
 const DEFAULT_MODEL = "claude-haiku-4-5";
 
-const CONFIG_DIR = path.join(os.homedir(), ".config", "file-finder");
+const CONFIG_DIR = path.join(os.homedir(), ".config", "querymindr");
 const CONFIG_FILE = path.join(CONFIG_DIR, "config.json");
 
 interface AppConfig {
@@ -364,13 +364,13 @@ async function runIncrementalIndexing(rootDirs: string[], jobId: number) {
   }
 }
 
-router.get("/file-finder/ai-config", (_req: Request, res: Response) => {
+router.get("/querymindr/ai-config", (_req: Request, res: Response) => {
   const envKeySet = !!process.env.ANTHROPIC_API_KEY;
   const runtimeKeySet = !!runtimeApiKey;
   res.json({ configured: envKeySet || runtimeKeySet, source: runtimeKeySet ? "runtime" : (envKeySet ? "env" : "none") });
 });
 
-router.post("/file-finder/ai-config", (req: Request, res: Response) => {
+router.post("/querymindr/ai-config", (req: Request, res: Response) => {
   const { api_key } = req.body as { api_key?: string };
   if (api_key && api_key.trim()) {
     runtimeApiKey = api_key.trim();
@@ -383,7 +383,7 @@ router.post("/file-finder/ai-config", (req: Request, res: Response) => {
   }
 });
 
-router.get("/file-finder/search", async (req: Request, res: Response) => {
+router.get("/querymindr/search", async (req: Request, res: Response) => {
   try {
     const {
       query = "",
@@ -470,7 +470,7 @@ router.get("/file-finder/search", async (req: Request, res: Response) => {
   }
 });
 
-router.post("/file-finder/ai-search", async (req: Request, res: Response) => {
+router.post("/querymindr/ai-search", async (req: Request, res: Response) => {
   try {
     const { description, folder_scope, model } = req.body;
     const client = getAnthropicClient();
@@ -509,7 +509,7 @@ router.post("/file-finder/ai-search", async (req: Request, res: Response) => {
   }
 });
 
-router.post("/file-finder/ai-summarize", async (req: Request, res: Response) => {
+router.post("/querymindr/ai-summarize", async (req: Request, res: Response) => {
   try {
     const { file_id, model } = req.body;
     const client = getAnthropicClient();
@@ -545,7 +545,7 @@ router.post("/file-finder/ai-summarize", async (req: Request, res: Response) => 
   }
 });
 
-router.post("/file-finder/more-like-this", async (req: Request, res: Response) => {
+router.post("/querymindr/more-like-this", async (req: Request, res: Response) => {
   try {
     const { file_id, limit: limitRaw = 20, model } = req.body;
     const limitNum = Math.min(50, Math.max(1, parseInt(String(limitRaw))));
@@ -585,7 +585,7 @@ router.post("/file-finder/more-like-this", async (req: Request, res: Response) =
   }
 });
 
-router.delete("/file-finder/files", async (req: Request, res: Response) => {
+router.delete("/querymindr/files", async (req: Request, res: Response) => {
   try {
     const { paths } = req.body as { paths: string[] };
     if (!Array.isArray(paths) || paths.length === 0) return res.status(400).json({ error: "paths array required" });
@@ -605,7 +605,7 @@ router.delete("/file-finder/files", async (req: Request, res: Response) => {
   }
 });
 
-router.post("/file-finder/open", async (req: Request, res: Response) => {
+router.post("/querymindr/open", async (req: Request, res: Response) => {
   try {
     const { path: filePath } = req.body;
     if (!filePath) return res.status(400).json({ success: false, message: "Path required" });
@@ -620,7 +620,7 @@ router.post("/file-finder/open", async (req: Request, res: Response) => {
   }
 });
 
-router.get("/file-finder/duplicates", async (req: Request, res: Response) => {
+router.get("/querymindr/duplicates", async (req: Request, res: Response) => {
   try {
     const { folder_scope } = req.query as Record<string, string>;
     const folderFilter = folder_scope ? "AND fi.folder LIKE ?" : "";
@@ -686,7 +686,7 @@ router.get("/file-finder/duplicates", async (req: Request, res: Response) => {
   }
 });
 
-router.post("/file-finder/index/start", async (req: Request, res: Response) => {
+router.post("/querymindr/index/start", async (req: Request, res: Response) => {
   try {
     const rootDirs = getRootDirs();
     const label = rootDirsLabel(rootDirs);
@@ -708,7 +708,7 @@ router.post("/file-finder/index/start", async (req: Request, res: Response) => {
   }
 });
 
-router.get("/file-finder/index/status", async (req: Request, res: Response) => {
+router.get("/querymindr/index/status", async (req: Request, res: Response) => {
   try {
     const job = db.prepare("SELECT * FROM indexing_jobs ORDER BY id DESC LIMIT 1").get() as JobRow | undefined;
     if (!job) return res.json({ status: "idle", type: null, root_dir: null, total_files: 0, processed_files: 0, started_at: null, completed_at: null, error_message: null });
@@ -718,7 +718,7 @@ router.get("/file-finder/index/status", async (req: Request, res: Response) => {
   }
 });
 
-router.post("/file-finder/index/incremental", async (req: Request, res: Response) => {
+router.post("/querymindr/index/incremental", async (req: Request, res: Response) => {
   try {
     const rootDirs = getRootDirs();
     const label = rootDirsLabel(rootDirs);
@@ -740,7 +740,7 @@ router.post("/file-finder/index/incremental", async (req: Request, res: Response
   }
 });
 
-router.get("/file-finder/folder-search", async (req: Request, res: Response) => {
+router.get("/querymindr/folder-search", async (req: Request, res: Response) => {
   try {
     const { q = "" } = req.query as Record<string, string>;
     if (!q.trim()) return res.json({ folders: [] });
@@ -773,7 +773,7 @@ router.get("/file-finder/folder-search", async (req: Request, res: Response) => 
   }
 });
 
-router.get("/file-finder/folders", async (req: Request, res: Response) => {
+router.get("/querymindr/folders", async (req: Request, res: Response) => {
   try {
     const rows = db.prepare("SELECT DISTINCT folder FROM file_index LIMIT 200").all() as { folder: string }[];
     const folders = rows.map((r) => r.folder).sort();
@@ -791,7 +791,7 @@ router.get("/file-finder/folders", async (req: Request, res: Response) => {
   }
 });
 
-router.get("/file-finder/stats", async (req: Request, res: Response) => {
+router.get("/querymindr/stats", async (req: Request, res: Response) => {
   try {
     const totals = db.prepare("SELECT COUNT(*) as count, SUM(size_bytes) as total_size FROM file_index").get() as { count: number; total_size: number };
     const typeRows = db.prepare("SELECT extension, COUNT(*) as count, SUM(size_bytes) as total_size FROM file_index GROUP BY extension ORDER BY COUNT(*) DESC LIMIT 50").all() as { extension: string; count: number; total_size: number }[];
@@ -812,7 +812,7 @@ router.get("/file-finder/stats", async (req: Request, res: Response) => {
 // ---------------------------------------------------------------
 // App config GET/POST
 // ---------------------------------------------------------------
-router.get("/file-finder/app-config", (_req: Request, res: Response) => {
+router.get("/querymindr/app-config", (_req: Request, res: Response) => {
   const config = readConfigFile();
   res.json({
     auto_index_interval_hours: config.auto_index_interval_hours ?? 12,
@@ -821,7 +821,7 @@ router.get("/file-finder/app-config", (_req: Request, res: Response) => {
   });
 });
 
-router.post("/file-finder/app-config", (req: Request, res: Response) => {
+router.post("/querymindr/app-config", (req: Request, res: Response) => {
   try {
     const config = readConfigFile();
     const { auto_index_interval_hours, checksum_limit_mb, root_dirs } = req.body as Partial<AppConfig>;

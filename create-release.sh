@@ -20,7 +20,7 @@ echo ""
 cd "$SCRIPT_DIR"
 
 echo "1/4  Building frontend..."
-NODE_ENV=production BASE_PATH=/file-finder/ pnpm --filter @workspace/file-finder run build
+NODE_ENV=production BASE_PATH=/querymindr/ pnpm --filter @workspace/file-finder run build
 echo "     Done."
 
 echo "2/4  Building server..."

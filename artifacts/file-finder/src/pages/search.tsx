@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import type { FileResult, SearchFilesSortBy, SearchFilesSortOrder } from "@workspace/api-client-react/src/generated/api.schemas";
 
-const MODEL_STORAGE_KEY = "file-finder-ai-model";
+const MODEL_STORAGE_KEY = "querymindr-ai-model";
 
 export default function SearchPage() {
   const [query, setQuery] = useState("");
@@ -52,7 +52,7 @@ export default function SearchPage() {
   // Check whether a Claude API key has been configured.
   // AI features are hidden entirely when it hasn't been — no error messages.
   useEffect(() => {
-    fetch("/api/file-finder/ai-config")
+    fetch("/api/querymindr/ai-config")
       .then((r) => r.json())
       .then((data) => {
         const configured = !!data.configured;
@@ -91,7 +91,7 @@ export default function SearchPage() {
       return;
     }
     const timer = setTimeout(() => {
-      fetch(`/api/file-finder/folder-search?q=${encodeURIComponent(query.trim())}`)
+      fetch(`/api/querymindr/folder-search?q=${encodeURIComponent(query.trim())}`)
         .then((r) => r.json())
         .then((data) => setFolderResults(data.folders || []))
         .catch(() => setFolderResults([]));

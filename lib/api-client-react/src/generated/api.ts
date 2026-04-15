@@ -134,8 +134,8 @@ export const getSearchFilesUrl = (params?: SearchFilesParams) => {
   const stringifiedParams = normalizedParams.toString();
 
   return stringifiedParams.length > 0
-    ? `/api/file-finder/search?${stringifiedParams}`
-    : `/api/file-finder/search`;
+    ? `/api/querymindr/search?${stringifiedParams}`
+    : `/api/querymindr/search`;
 };
 
 export const searchFiles = async (
@@ -149,7 +149,7 @@ export const searchFiles = async (
 };
 
 export const getSearchFilesQueryKey = (params?: SearchFilesParams) => {
-  return [`/api/file-finder/search`, ...(params ? [params] : [])] as const;
+  return [`/api/querymindr/search`, ...(params ? [params] : [])] as const;
 };
 
 export const getSearchFilesQueryOptions = <
@@ -217,7 +217,7 @@ export function useSearchFiles<
  * @summary Natural language AI-powered file search
  */
 export const getAiSearchFilesUrl = () => {
-  return `/api/file-finder/ai-search`;
+  return `/api/querymindr/ai-search`;
 };
 
 export const aiSearchFiles = async (
@@ -303,7 +303,7 @@ export const useAiSearchFiles = <
  * @summary Generate AI summary for a file
  */
 export const getAiSummarizeFileUrl = () => {
-  return `/api/file-finder/ai-summarize`;
+  return `/api/querymindr/ai-summarize`;
 };
 
 export const aiSummarizeFile = async (
@@ -389,7 +389,7 @@ export const useAiSummarizeFile = <
  * @summary Find files similar to a given file
  */
 export const getMoreLikeThisUrl = () => {
-  return `/api/file-finder/more-like-this`;
+  return `/api/querymindr/more-like-this`;
 };
 
 export const moreLikeThis = async (
@@ -475,7 +475,7 @@ export const useMoreLikeThis = <
  * @summary Reveal file in macOS Finder
  */
 export const getOpenInFinderUrl = () => {
-  return `/api/file-finder/open`;
+  return `/api/querymindr/open`;
 };
 
 export const openInFinder = async (
@@ -572,8 +572,8 @@ export const getFindDuplicatesUrl = (params?: FindDuplicatesParams) => {
   const stringifiedParams = normalizedParams.toString();
 
   return stringifiedParams.length > 0
-    ? `/api/file-finder/duplicates?${stringifiedParams}`
-    : `/api/file-finder/duplicates`;
+    ? `/api/querymindr/duplicates?${stringifiedParams}`
+    : `/api/querymindr/duplicates`;
 };
 
 export const findDuplicates = async (
@@ -587,7 +587,7 @@ export const findDuplicates = async (
 };
 
 export const getFindDuplicatesQueryKey = (params?: FindDuplicatesParams) => {
-  return [`/api/file-finder/duplicates`, ...(params ? [params] : [])] as const;
+  return [`/api/querymindr/duplicates`, ...(params ? [params] : [])] as const;
 };
 
 export const getFindDuplicatesQueryOptions = <
@@ -655,7 +655,7 @@ export function useFindDuplicates<
  * @summary Start background file indexing
  */
 export const getStartIndexingUrl = () => {
-  return `/api/file-finder/index/start`;
+  return `/api/querymindr/index/start`;
 };
 
 export const startIndexing = async (
@@ -741,7 +741,7 @@ export const useStartIndexing = <
  * @summary Get current indexing status
  */
 export const getGetIndexStatusUrl = () => {
-  return `/api/file-finder/index/status`;
+  return `/api/querymindr/index/status`;
 };
 
 export const getIndexStatus = async (
@@ -754,7 +754,7 @@ export const getIndexStatus = async (
 };
 
 export const getGetIndexStatusQueryKey = () => {
-  return [`/api/file-finder/index/status`] as const;
+  return [`/api/querymindr/index/status`] as const;
 };
 
 export const getGetIndexStatusQueryOptions = <
@@ -816,7 +816,7 @@ export function useGetIndexStatus<
  * @summary Get top-level folder list for scope selection
  */
 export const getGetFoldersUrl = () => {
-  return `/api/file-finder/folders`;
+  return `/api/querymindr/folders`;
 };
 
 export const getFolders = async (
@@ -829,7 +829,7 @@ export const getFolders = async (
 };
 
 export const getGetFoldersQueryKey = () => {
-  return [`/api/file-finder/folders`] as const;
+  return [`/api/querymindr/folders`] as const;
 };
 
 export const getGetFoldersQueryOptions = <
@@ -891,7 +891,7 @@ export function useGetFolders<
  * @summary Get index statistics
  */
 export const getGetIndexStatsUrl = () => {
-  return `/api/file-finder/stats`;
+  return `/api/querymindr/stats`;
 };
 
 export const getIndexStats = async (
@@ -904,7 +904,7 @@ export const getIndexStats = async (
 };
 
 export const getGetIndexStatsQueryKey = () => {
-  return [`/api/file-finder/stats`] as const;
+  return [`/api/querymindr/stats`] as const;
 };
 
 export const getGetIndexStatsQueryOptions = <

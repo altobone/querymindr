@@ -9,10 +9,10 @@ set -e
 
 ROOT_DIR="${ROOT_DIR:-/Volumes/Thunderbay}"
 PORT="${PORT:-8080}"
-INSTALL_DIR="$HOME/.file-finder"
-PLIST_LABEL="com.musicsavvy.filefinder"
+INSTALL_DIR="$HOME/.querymindr"
+PLIST_LABEL="com.musicsavvy.querymindr"
 PLIST_FILE="$HOME/Library/LaunchAgents/$PLIST_LABEL.plist"
-MENUBAR_PLIST_LABEL="com.musicsavvy.filefinder.menubar"
+MENUBAR_PLIST_LABEL="com.musicsavvy.querymindr.menubar"
 MENUBAR_PLIST_FILE="$HOME/Library/LaunchAgents/$MENUBAR_PLIST_LABEL.plist"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 NODE_BIN="$(which node)"
@@ -64,7 +64,7 @@ else
   # Step 2: Build the frontend
   # ---------------------------------------------------------------
   echo "2/6  Building frontend..."
-  NODE_ENV=production BASE_PATH=/file-finder/ "$PNPM_BIN" --filter @workspace/file-finder run build
+  NODE_ENV=production BASE_PATH=/querymindr/ "$PNPM_BIN" --filter @workspace/file-finder run build
   echo "     Frontend built."
 
   # ---------------------------------------------------------------
@@ -88,7 +88,7 @@ if [ "$PREBUILT" = true ]; then
 else
   cp -r artifacts/api-server/dist/* "$INSTALL_DIR/"
   mkdir -p "$INSTALL_DIR/public"
-  cp -r artifacts/file-finder/dist/public/* "$INSTALL_DIR/public/"
+  cp -r artifacts/querymindr/dist/public/* "$INSTALL_DIR/public/"
 fi
 
 echo "     Files installed."
@@ -224,7 +224,7 @@ echo "     Launch agents installed."
 echo ""
 echo "Waiting for server to start..."
 for i in {1..15}; do
-  if curl -s "http://localhost:$PORT/api/file-finder/stats" > /dev/null 2>&1; then
+  if curl -s "http://localhost:$PORT/api/querymindr/stats" > /dev/null 2>&1; then
     break
   fi
   sleep 1
@@ -235,7 +235,7 @@ echo "╔═══════════════════════�
 echo "║   Querymindr installed!              ║"
 echo "╚══════════════════════════════════════╝"
 echo ""
-echo "  App URL : http://localhost:$PORT/file-finder/"
+echo "  App URL : http://localhost:$PORT/querymindr/"
 echo ""
 if [ "$MENUBAR_BUILT" = true ]; then
 echo "  A magnifying glass icon 🔍 is now in your menu bar."
@@ -253,4 +253,4 @@ echo "    launchctl load $PLIST_FILE"
 echo ""
 
 # Open the browser
-open "http://localhost:$PORT/file-finder/"
+open "http://localhost:$PORT/querymindr/"
