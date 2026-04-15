@@ -48,6 +48,13 @@ Expo (React Native) app at `artifacts/loft-mobile` for Music Savvy musicians to 
 - `@tanstack/react-query` — API state management
 - `react-native-keyboard-controller` — keyboard handling
 
+## User Preferences
+
+- **Always include the terminal install command** whenever a new release (`querymindr-release.tar.gz`) is packaged. Show both the standard install command and the `.pkg` build command.
+  - Install: `cd ~/Downloads && tar -xzf querymindr-release.tar.gz && cd querymindr-release && bash install-querymindr.sh`
+  - Build pkg: `cd ~/Downloads && tar -xzf querymindr-release.tar.gz && cd querymindr-release && bash build-pkg.sh`
+- Non-technical user — always lead with the simplest approach first, avoid jargon.
+
 ## Key Commands
 
 - `pnpm run typecheck` — full typecheck across all packages
