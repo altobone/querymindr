@@ -101,12 +101,17 @@ echo "     Files installed."
 OLD_DB="$HOME/.config/file-finder/file-finder.db"
 NEW_CONFIG_DIR="$HOME/.config/querymindr"
 NEW_DB="$NEW_CONFIG_DIR/querymindr.db"
-if [ -f "$OLD_DB" ] && [ ! -f "$NEW_DB" ]; then
-  mkdir -p "$NEW_CONFIG_DIR"
-  cp "$OLD_DB" "$NEW_DB"
-  echo "     Migrated existing index — no full re-index needed."
-elif [ -f "$NEW_DB" ]; then
-  echo "     Existing index found — no migration needed."
+if [ -f "$OLD_DB" ]; then
+  OLD_SIZE=$(stat -f%z "$OLD_DB" 2>/dev/null || echo "0")
+  NEW_SIZE=$(stat -f%z "$NEW_DB" 2>/dev/null || echo "0")
+  # Migrate if old DB is larger (has real data) and new DB is absent or empty/smaller
+  if [ "$OLD_SIZE" -gt "$NEW_SIZE" ]; then
+    mkdir -p "$NEW_CONFIG_DIR"
+    cp "$OLD_DB" "$NEW_DB"
+    echo "     Migrated existing index — no full re-index needed."
+  else
+    echo "     Existing index found — no migration needed."
+  fi
 fi
 
 # ---------------------------------------------------------------
