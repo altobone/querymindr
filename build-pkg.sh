@@ -151,6 +151,20 @@ cp -r "$SRC_DIR/public/"* "$INSTALL_DIR/public/"
 chown -R "$CURRENT_USER" "$INSTALL_DIR"
 
 # ------------------------------------------------------------------
+# Migrate existing database from old location (pre-rename)
+# Copies ~/.config/file-finder/file-finder.db → ~/.config/querymindr/querymindr.db
+# only if the new DB doesn't already exist, preserving the full index.
+# ------------------------------------------------------------------
+OLD_DB="$USER_HOME/.config/file-finder/file-finder.db"
+NEW_CONFIG_DIR="$USER_HOME/.config/querymindr"
+NEW_DB="$NEW_CONFIG_DIR/querymindr.db"
+if [ -f "$OLD_DB" ] && [ ! -f "$NEW_DB" ]; then
+  mkdir -p "$NEW_CONFIG_DIR"
+  cp "$OLD_DB" "$NEW_DB"
+  chown -R "$CURRENT_USER" "$NEW_CONFIG_DIR"
+fi
+
+# ------------------------------------------------------------------
 # Build menu bar app (requires Xcode CLT)
 # ------------------------------------------------------------------
 MENUBAR_BUILT=false

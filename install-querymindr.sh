@@ -88,10 +88,26 @@ if [ "$PREBUILT" = true ]; then
 else
   cp -r artifacts/api-server/dist/* "$INSTALL_DIR/"
   mkdir -p "$INSTALL_DIR/public"
-  cp -r artifacts/querymindr/dist/public/* "$INSTALL_DIR/public/"
+  cp -r artifacts/file-finder/dist/public/* "$INSTALL_DIR/public/"
 fi
 
 echo "     Files installed."
+
+# ---------------------------------------------------------------
+# Migrate existing database from old location (pre-rename)
+# Copies ~/.config/file-finder/file-finder.db → ~/.config/querymindr/querymindr.db
+# only if the new DB doesn't already exist, preserving the full index.
+# ---------------------------------------------------------------
+OLD_DB="$HOME/.config/file-finder/file-finder.db"
+NEW_CONFIG_DIR="$HOME/.config/querymindr"
+NEW_DB="$NEW_CONFIG_DIR/querymindr.db"
+if [ -f "$OLD_DB" ] && [ ! -f "$NEW_DB" ]; then
+  mkdir -p "$NEW_CONFIG_DIR"
+  cp "$OLD_DB" "$NEW_DB"
+  echo "     Migrated existing index — no full re-index needed."
+elif [ -f "$NEW_DB" ]; then
+  echo "     Existing index found — no migration needed."
+fi
 
 # ---------------------------------------------------------------
 # Step 5: Build menu bar app (requires Xcode Command Line Tools)
