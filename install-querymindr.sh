@@ -40,25 +40,40 @@ fi
 cd "$SCRIPT_DIR"
 
 # ---------------------------------------------------------------
-# Step 1: Install dependencies
+# Detect pre-built release vs. full source tree
 # ---------------------------------------------------------------
-echo "1/6  Installing dependencies (this takes a few minutes the first time)..."
-"$PNPM_BIN" install --filter @workspace/file-finder... --filter @workspace/api-server...
-echo "     Dependencies ready."
+if [ -f "$SCRIPT_DIR/server/index.mjs" ]; then
+  PREBUILT=true
+else
+  PREBUILT=false
+fi
 
-# ---------------------------------------------------------------
-# Step 2: Build the frontend
-# ---------------------------------------------------------------
-echo "2/6  Building frontend..."
-NODE_ENV=production BASE_PATH=/file-finder/ "$PNPM_BIN" --filter @workspace/file-finder run build
-echo "     Frontend built."
+if [ "$PREBUILT" = true ]; then
+  echo "1/6  Using pre-built release (no build required)."
+  echo "2/6  Skipped (pre-built)."
+  echo "3/6  Skipped (pre-built)."
+else
+  # ---------------------------------------------------------------
+  # Step 1: Install dependencies
+  # ---------------------------------------------------------------
+  echo "1/6  Installing dependencies (this takes a few minutes the first time)..."
+  "$PNPM_BIN" install --filter @workspace/file-finder... --filter @workspace/api-server...
+  echo "     Dependencies ready."
 
-# ---------------------------------------------------------------
-# Step 3: Build the backend
-# ---------------------------------------------------------------
-echo "3/6  Building server..."
-"$PNPM_BIN" --filter @workspace/api-server run build
-echo "     Server built."
+  # ---------------------------------------------------------------
+  # Step 2: Build the frontend
+  # ---------------------------------------------------------------
+  echo "2/6  Building frontend..."
+  NODE_ENV=production BASE_PATH=/file-finder/ "$PNPM_BIN" --filter @workspace/file-finder run build
+  echo "     Frontend built."
+
+  # ---------------------------------------------------------------
+  # Step 3: Build the backend
+  # ---------------------------------------------------------------
+  echo "3/6  Building server..."
+  "$PNPM_BIN" --filter @workspace/api-server run build
+  echo "     Server built."
+fi
 
 # ---------------------------------------------------------------
 # Step 4: Copy everything to the permanent install directory
@@ -66,12 +81,15 @@ echo "     Server built."
 echo "4/6  Installing to $INSTALL_DIR..."
 mkdir -p "$INSTALL_DIR"
 
-# Copy server dist
-cp -r artifacts/api-server/dist/* "$INSTALL_DIR/"
-
-# Copy frontend build into public/ subdirectory (served by the server)
-mkdir -p "$INSTALL_DIR/public"
-cp -r artifacts/file-finder/dist/public/* "$INSTALL_DIR/public/"
+if [ "$PREBUILT" = true ]; then
+  cp -r "$SCRIPT_DIR/server/"* "$INSTALL_DIR/"
+  mkdir -p "$INSTALL_DIR/public"
+  cp -r "$SCRIPT_DIR/public/"* "$INSTALL_DIR/public/"
+else
+  cp -r artifacts/api-server/dist/* "$INSTALL_DIR/"
+  mkdir -p "$INSTALL_DIR/public"
+  cp -r artifacts/file-finder/dist/public/* "$INSTALL_DIR/public/"
+fi
 
 echo "     Files installed."
 
