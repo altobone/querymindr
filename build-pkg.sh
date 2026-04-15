@@ -165,6 +165,8 @@ if [ -f "$OLD_DB" ]; then
   if [ "$OLD_SIZE" -gt "$NEW_SIZE" ]; then
     mkdir -p "$NEW_CONFIG_DIR"
     cp "$OLD_DB" "$NEW_DB"
+    [ -f "${OLD_DB}-wal" ] && cp "${OLD_DB}-wal" "${NEW_DB}-wal"
+    [ -f "${OLD_DB}-shm" ] && cp "${OLD_DB}-shm" "${NEW_DB}-shm"
     chown -R "$CURRENT_USER" "$NEW_CONFIG_DIR"
   fi
 fi
