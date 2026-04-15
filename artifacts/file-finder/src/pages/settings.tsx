@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { HardDrive, Activity, AlertTriangle, CheckCircle2, Cpu, KeyRound, Eye, EyeOff, Zap, RefreshCw } from "lucide-react";
+import { HardDrive, Activity, AlertTriangle, CheckCircle2, Cpu, KeyRound, Eye, EyeOff, Zap, RefreshCw, Clock, Database } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -17,13 +17,31 @@ const MODEL_OPTIONS = [
   { value: "claude-sonnet-4-5", label: "Claude Sonnet", description: "More powerful — better for complex queries" },
 ];
 
+const SCHEDULE_OPTIONS = [
+  { value: "0",  label: "Disabled",      description: "Never auto-update — run manually only" },
+  { value: "1",  label: "Every hour",    description: "Keeps the index very fresh; fine for fast drives" },
+  { value: "6",  label: "Every 6 hours", description: "Four times a day" },
+  { value: "12", label: "Every 12 hours",description: "Twice a day — midnight & noon (default)" },
+  { value: "24", label: "Every 24 hours",description: "Once a day at midnight" },
+];
+
+const CHECKSUM_OPTIONS = [
+  { value: "50",   label: "50 MB",  description: "Fastest — skips checksums on larger files" },
+  { value: "100",  label: "100 MB", description: "Default — covers most audio tracks" },
+  { value: "250",  label: "250 MB", description: "Covers large stems and rendered mixes" },
+  { value: "500",  label: "500 MB", description: "Covers most video exports" },
+  { value: "1000", label: "1 GB",   description: "Thorough — slower on very large files" },
+];
+
 export default function SettingsPage() {
-  const [rootDir, setRootDir] = useState("/Users/admin");
+  const [rootDir, setRootDir] = useState("");
   const [selectedModel, setSelectedModel] = useState<string>(() => localStorage.getItem(MODEL_STORAGE_KEY) ?? "claude-haiku-4-5");
   const [apiKey, setApiKey] = useState("");
   const [showKey, setShowKey] = useState(false);
   const [apiKeyStatus, setApiKeyStatus] = useState<"unknown" | "configured" | "missing">("unknown");
   const [savingKey, setSavingKey] = useState(false);
+  const [scheduleInterval, setScheduleInterval] = useState("12");
+  const [checksumLimit, setChecksumLimit] = useState("100");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -31,7 +49,41 @@ export default function SettingsPage() {
       .then((r) => r.json())
       .then((d: { configured: boolean }) => setApiKeyStatus(d.configured ? "configured" : "missing"))
       .catch(() => setApiKeyStatus("missing"));
+
+    fetch("/api/file-finder/app-config")
+      .then((r) => r.json())
+      .then((d: { auto_index_interval_hours: number; checksum_limit_mb: number; root_dir: string }) => {
+        setScheduleInterval(String(d.auto_index_interval_hours ?? 12));
+        setChecksumLimit(String(d.checksum_limit_mb ?? 100));
+        if (d.root_dir) setRootDir(d.root_dir);
+      })
+      .catch(() => {});
   }, []);
+
+  const saveAppConfig = async (patch: { auto_index_interval_hours?: number; checksum_limit_mb?: number }) => {
+    try {
+      await fetch("/api/file-finder/app-config", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patch),
+      });
+    } catch {
+      toast({ title: "Error", description: "Could not save setting.", variant: "destructive" });
+    }
+  };
+
+  const handleScheduleChange = (value: string) => {
+    setScheduleInterval(value);
+    saveAppConfig({ auto_index_interval_hours: Number(value) });
+    const label = SCHEDULE_OPTIONS.find(o => o.value === value)?.label ?? value;
+    toast({ title: "Schedule Updated", description: label === "Disabled" ? "Auto-update is now off." : `Auto-update set to: ${label}` });
+  };
+
+  const handleChecksumChange = (value: string) => {
+    setChecksumLimit(value);
+    saveAppConfig({ checksum_limit_mb: Number(value) });
+    toast({ title: "Checksum Limit Updated", description: `Files up to ${CHECKSUM_OPTIONS.find(o => o.value === value)?.label} will be fingerprinted for duplicate detection.` });
+  };
 
   const handleSaveApiKey = async () => {
     setSavingKey(true);
@@ -200,6 +252,60 @@ export default function SettingsPage() {
                   {MODEL_OPTIONS.find(m => m.value === selectedModel)?.description}
                 </p>
               </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Clock className="w-5 h-5 text-primary" />
+                Auto-Update Schedule
+              </CardTitle>
+              <CardDescription>
+                How often the index runs a Quick Update automatically in the background.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Select value={scheduleInterval} onValueChange={handleScheduleChange}>
+                <SelectTrigger className="w-64">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {SCHEDULE_OPTIONS.map((o) => (
+                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-sm text-muted-foreground">
+                {SCHEDULE_OPTIONS.find(o => o.value === scheduleInterval)?.description}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Database className="w-5 h-5 text-primary" />
+                Checksum File Size Limit
+              </CardTitle>
+              <CardDescription>
+                Files below this size get a fingerprint used for duplicate detection. Larger files are skipped to save time.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Select value={checksumLimit} onValueChange={handleChecksumChange}>
+                <SelectTrigger className="w-64">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {CHECKSUM_OPTIONS.map((o) => (
+                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-sm text-muted-foreground">
+                {CHECKSUM_OPTIONS.find(o => o.value === checksumLimit)?.description}
+              </p>
             </CardContent>
           </Card>
 

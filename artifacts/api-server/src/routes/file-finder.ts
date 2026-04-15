@@ -21,14 +21,20 @@ const DEFAULT_MODEL = "claude-haiku-4-5";
 const CONFIG_DIR = path.join(os.homedir(), ".config", "file-finder");
 const CONFIG_FILE = path.join(CONFIG_DIR, "config.json");
 
-function readConfigFile(): { api_key?: string } {
+interface AppConfig {
+  api_key?: string;
+  auto_index_interval_hours?: number;
+  checksum_limit_mb?: number;
+}
+
+function readConfigFile(): AppConfig {
   try {
     if (fs.existsSync(CONFIG_FILE)) return JSON.parse(fs.readFileSync(CONFIG_FILE, "utf8"));
   } catch { }
   return {};
 }
 
-function writeConfigFile(data: { api_key?: string }): void {
+function writeConfigFile(data: AppConfig): void {
   try {
     fs.mkdirSync(CONFIG_DIR, { recursive: true });
     fs.writeFileSync(CONFIG_FILE, JSON.stringify(data, null, 2), { mode: 0o600 });
@@ -157,10 +163,11 @@ async function runIndexing(rootDir: string, jobId: number) {
           const name = path.basename(filePath);
           const folder = path.dirname(filePath);
 
-          // Checksum files ≤100 MB (covers most audio tracks; skips very large video)
+          // Checksum files up to the configured limit (default 100 MB)
+          const checksumLimitMb = readConfigFile().checksum_limit_mb ?? 100;
           let checksum: string | null = null;
           try {
-            if (stat.size <= 100 * 1024 * 1024) {
+            if (stat.size <= checksumLimitMb * 1024 * 1024) {
               checksum = await computeChecksum(filePath);
             }
           } catch { }
@@ -301,8 +308,9 @@ async function runIncrementalIndexing(rootDir: string, jobId: number) {
         const name = path.basename(filePath);
         const folder = path.dirname(filePath);
 
+        const checksumLimitMb = readConfigFile().checksum_limit_mb ?? 100;
         let checksum: string | null = null;
-        try { if (stat.size <= 100 * 1024 * 1024) checksum = await computeChecksum(filePath); } catch { }
+        try { if (stat.size <= checksumLimitMb * 1024 * 1024) checksum = await computeChecksum(filePath); } catch { }
 
         let content: string | null = null;
         try { content = await extractTextContent(filePath, ext); } catch { }
@@ -731,16 +739,33 @@ router.get("/file-finder/stats", async (req: Request, res: Response) => {
 });
 
 // ---------------------------------------------------------------
-// Scheduled auto-index: Quick Update at midnight and noon daily
+// App config GET/POST
 // ---------------------------------------------------------------
-function msUntilNext(hour: number): number {
-  const now = new Date();
-  const next = new Date(now);
-  next.setHours(hour, 0, 0, 0);
-  if (next <= now) next.setDate(next.getDate() + 1);
-  return next.getTime() - now.getTime();
-}
+router.get("/file-finder/app-config", (_req: Request, res: Response) => {
+  const config = readConfigFile();
+  res.json({
+    auto_index_interval_hours: config.auto_index_interval_hours ?? 12,
+    checksum_limit_mb: config.checksum_limit_mb ?? 100,
+    root_dir: ROOT_DIR,
+  });
+});
 
+router.post("/file-finder/app-config", (req: Request, res: Response) => {
+  try {
+    const config = readConfigFile();
+    const { auto_index_interval_hours, checksum_limit_mb } = req.body as Partial<AppConfig>;
+    if (auto_index_interval_hours !== undefined) config.auto_index_interval_hours = Number(auto_index_interval_hours);
+    if (checksum_limit_mb !== undefined) config.checksum_limit_mb = Number(checksum_limit_mb);
+    writeConfigFile(config);
+    res.json({ ok: true });
+  } catch (err: unknown) {
+    res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+  }
+});
+
+// ---------------------------------------------------------------
+// Scheduled auto-index — dynamic, reads config each hour
+// ---------------------------------------------------------------
 async function runScheduledIncremental() {
   if (isIndexingRunning) return;
   const now = new Date().toISOString();
@@ -753,14 +778,21 @@ async function runScheduledIncremental() {
 }
 
 function scheduleAutoIndex() {
-  const INTERVAL_MS = 12 * 60 * 60 * 1000; // 12 hours
+  // Check every hour — runs if enough time has passed since last completed job
+  setInterval(() => {
+    const config = readConfigFile();
+    const intervalHours = config.auto_index_interval_hours ?? 12;
+    if (intervalHours === 0 || isIndexingRunning) return;
 
-  // Fire at the next midnight, then every 12 hours (hitting midnight & noon)
-  const msToMidnight = msUntilNext(0);
-  setTimeout(() => {
-    runScheduledIncremental();
-    setInterval(runScheduledIncremental, INTERVAL_MS);
-  }, msToMidnight);
+    const lastJob = db.prepare(
+      "SELECT completed_at FROM indexing_jobs WHERE status = 'completed' ORDER BY completed_at DESC LIMIT 1"
+    ).get() as { completed_at: string } | undefined;
+
+    if (!lastJob) return; // never fully indexed — don't auto-run
+
+    const elapsedHours = (Date.now() - new Date(lastJob.completed_at).getTime()) / (1000 * 60 * 60);
+    if (elapsedHours >= intervalHours) runScheduledIncremental();
+  }, 60 * 60 * 1000);
 }
 
 scheduleAutoIndex();
