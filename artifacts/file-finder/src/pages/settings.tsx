@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { HardDrive, Activity, AlertTriangle, CheckCircle2, Cpu, KeyRound, Eye, EyeOff, Zap, RefreshCw, Clock, Database } from "lucide-react";
+import { HardDrive, Activity, AlertTriangle, CheckCircle2, Cpu, KeyRound, Eye, EyeOff, Zap, RefreshCw, Clock, Database, Plus, X } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -34,7 +34,8 @@ const CHECKSUM_OPTIONS = [
 ];
 
 export default function SettingsPage() {
-  const [rootDir, setRootDir] = useState("");
+  const [rootDirs, setRootDirs] = useState<string[]>([]);
+  const [newDirInput, setNewDirInput] = useState("");
   const [selectedModel, setSelectedModel] = useState<string>(() => localStorage.getItem(MODEL_STORAGE_KEY) ?? "claude-haiku-4-5");
   const [apiKey, setApiKey] = useState("");
   const [showKey, setShowKey] = useState(false);
@@ -52,15 +53,15 @@ export default function SettingsPage() {
 
     fetch("/api/file-finder/app-config")
       .then((r) => r.json())
-      .then((d: { auto_index_interval_hours: number; checksum_limit_mb: number; root_dir: string }) => {
+      .then((d: { auto_index_interval_hours: number; checksum_limit_mb: number; root_dirs: string[] }) => {
         setScheduleInterval(String(d.auto_index_interval_hours ?? 12));
         setChecksumLimit(String(d.checksum_limit_mb ?? 100));
-        if (d.root_dir) setRootDir(d.root_dir);
+        if (d.root_dirs?.length) setRootDirs(d.root_dirs);
       })
       .catch(() => {});
   }, []);
 
-  const saveAppConfig = async (patch: { auto_index_interval_hours?: number; checksum_limit_mb?: number }) => {
+  const saveAppConfig = async (patch: { auto_index_interval_hours?: number; checksum_limit_mb?: number; root_dirs?: string[] }) => {
     try {
       await fetch("/api/file-finder/app-config", {
         method: "POST",
@@ -70,6 +71,23 @@ export default function SettingsPage() {
     } catch {
       toast({ title: "Error", description: "Could not save setting.", variant: "destructive" });
     }
+  };
+
+  const handleAddDrive = () => {
+    const trimmed = newDirInput.trim();
+    if (!trimmed || rootDirs.includes(trimmed)) return;
+    const updated = [...rootDirs, trimmed];
+    setRootDirs(updated);
+    setNewDirInput("");
+    saveAppConfig({ root_dirs: updated });
+    toast({ title: "Drive Added", description: trimmed });
+  };
+
+  const handleRemoveDrive = (dir: string) => {
+    const updated = rootDirs.filter(d => d !== dir);
+    setRootDirs(updated);
+    saveAppConfig({ root_dirs: updated });
+    toast({ title: "Drive Removed", description: dir });
   };
 
   const handleScheduleChange = (value: string) => {
@@ -133,25 +151,27 @@ export default function SettingsPage() {
   }, [isRunning, refetchStatus, refetchStats]);
 
   const handleStart = () => {
-    if (!rootDir) return;
-    startIndex.mutate({ data: { root_dir: rootDir } }, {
+    if (rootDirs.length === 0) return;
+    startIndex.mutate({ data: {} }, {
       onSuccess: () => {
-        toast({ title: "Full Re-index Started", description: `Scanning all files in ${rootDir}...` });
+        const label = rootDirs.length === 1 ? rootDirs[0] : `${rootDirs.length} drives`;
+        toast({ title: "Full Re-index Started", description: `Scanning all files in ${label}...` });
         refetchStatus();
       }
     });
   };
 
   const handleIncremental = async () => {
-    if (!rootDir || isRunning) return;
+    if (rootDirs.length === 0 || isRunning) return;
     setIncrementalRunning(true);
     try {
       await fetch("/api/file-finder/index/incremental", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ root_dir: rootDir }),
+        body: JSON.stringify({}),
       });
-      toast({ title: "Quick Update Started", description: `Scanning only changed folders in ${rootDir}...` });
+      const label = rootDirs.length === 1 ? rootDirs[0] : `${rootDirs.length} drives`;
+      toast({ title: "Quick Update Started", description: `Scanning only changed folders in ${label}...` });
       refetchStatus();
     } catch {
       toast({ title: "Error", description: "Could not start quick update.", variant: "destructive" });
@@ -316,34 +336,67 @@ export default function SettingsPage() {
                 Index Engine
               </CardTitle>
               <CardDescription>
-                Point the engine to your root drive to build the search database.
+                Add one or more drives or folders to build the search database.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="flex gap-3 items-end">
+              <div className="flex gap-3 items-start">
                 <div className="flex-1 space-y-2">
-                  <label className="text-sm font-medium">Root Directory to Scan</label>
-                  <Input 
-                    value={rootDir}
-                    onChange={(e) => setRootDir(e.target.value)}
-                    placeholder="/Users/username"
-                    disabled={isRunning}
-                    className="font-mono text-sm"
-                  />
+                  <label className="text-sm font-medium">Drives to Scan</label>
+
+                  {rootDirs.length > 0 && (
+                    <div className="space-y-2">
+                      {rootDirs.map((dir) => (
+                        <div key={dir} className="flex items-center gap-2 bg-secondary/50 rounded-md px-3 py-2 border border-border">
+                          <HardDrive className="w-4 h-4 text-muted-foreground shrink-0" />
+                          <span className="font-mono text-sm flex-1 truncate">{dir}</span>
+                          <button
+                            onClick={() => handleRemoveDrive(dir)}
+                            disabled={isRunning}
+                            className="text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
+                            title="Remove drive"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="flex gap-2">
+                    <Input
+                      value={newDirInput}
+                      onChange={(e) => setNewDirInput(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && handleAddDrive()}
+                      placeholder="/Volumes/MyDrive"
+                      disabled={isRunning}
+                      className="font-mono text-sm"
+                    />
+                    <Button
+                      onClick={handleAddDrive}
+                      disabled={isRunning || !newDirInput.trim()}
+                      variant="outline"
+                      size="icon"
+                      title="Add drive"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex flex-col gap-2">
+
+                <div className="flex flex-col gap-2 pt-7">
                   <Button
                     onClick={handleIncremental}
-                    disabled={isRunning || incrementalRunning || !rootDir}
+                    disabled={isRunning || incrementalRunning || rootDirs.length === 0}
                     variant="outline"
                     className="gap-2"
                   >
                     <Zap className="w-4 h-4" />
                     {isRunning && (statusData as { type?: string })?.type === "incremental" ? "Updating..." : "Quick Update"}
                   </Button>
-                  <Button 
-                    onClick={handleStart} 
-                    disabled={isRunning || !rootDir}
+                  <Button
+                    onClick={handleStart}
+                    disabled={isRunning || rootDirs.length === 0}
                     variant="secondary"
                     className="gap-2"
                   >
