@@ -18,7 +18,7 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 STAGING="$SCRIPT_DIR/.pkg-staging"
 OUTPUT="$SCRIPT_DIR/Querymindr.pkg"
-COMPONENT_PKG="$SCRIPT_DIR/.Querymindr-component.pkg"
+COMPONENT_PKG="$SCRIPT_DIR/Querymindr-component.pkg"
 PKG_ID="com.musicsavvy.querymindr"
 PKG_VERSION="1.0"
 INSTALL_PREFIX="/usr/local/lib/querymindr"
