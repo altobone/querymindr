@@ -7,7 +7,7 @@ set -e
 # that starts automatically at login — no Terminal needed.
 # ---------------------------------------------------------------
 
-ROOT_DIR="${ROOT_DIR:-/mnt/thunderbay}"
+ROOT_DIR="${ROOT_DIR:-}"
 PORT="${PORT:-8080}"
 INSTALL_DIR="$HOME/.file-finder"
 SERVICE_NAME="file-finder"
@@ -28,12 +28,19 @@ echo "Install dir: $INSTALL_DIR"
 echo "Node       : $NODE_BIN"
 echo ""
 
+# Require a drive path
+if [ -z "$ROOT_DIR" ]; then
+  echo "ERROR: No drive path specified."
+  echo ""
+  echo "Pass the path to the drive you want to index:"
+  echo "  ROOT_DIR=/media/yourname/drivename bash install-linux.sh"
+  exit 1
+fi
+
 # Verify drive exists
 if [ ! -d "$ROOT_DIR" ]; then
-  echo "ERROR: Drive not found at $ROOT_DIR"
-  echo ""
-  echo "Tip: pass your drive path like this:"
-  echo "  ROOT_DIR=/path/to/your/drive bash install-linux.sh"
+  echo "ERROR: Directory not found: $ROOT_DIR"
+  echo "Make sure your drive is connected and mounted, then try again."
   exit 1
 fi
 
