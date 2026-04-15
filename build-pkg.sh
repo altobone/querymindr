@@ -178,8 +178,16 @@ fi
 # ------------------------------------------------------------------
 mkdir -p "$USER_HOME/Library/LaunchAgents"
 
-# Stop any previous version
-launchctl asuser "$(id -u "$CURRENT_USER")" launchctl unload "$PLIST_FILE" 2>/dev/null || true
+# Stop any previous version (both new and old pre-rename names)
+USER_UID="$(id -u "$CURRENT_USER")"
+OLD_PLIST="$USER_HOME/Library/LaunchAgents/com.musicsavvy.filefinder.plist"
+OLD_MENUBAR_PLIST="$USER_HOME/Library/LaunchAgents/com.musicsavvy.filefinder.menubar.plist"
+launchctl asuser "$USER_UID" launchctl unload "$PLIST_FILE"         2>/dev/null || true
+launchctl asuser "$USER_UID" launchctl unload "$MENUBAR_PLIST_FILE" 2>/dev/null || true
+launchctl asuser "$USER_UID" launchctl unload "$OLD_PLIST"          2>/dev/null || true
+launchctl asuser "$USER_UID" launchctl unload "$OLD_MENUBAR_PLIST"  2>/dev/null || true
+# Brief pause to let old processes release the port
+sleep 2
 
 cat > "$PLIST_FILE" << PLIST
 <?xml version="1.0" encoding="UTF-8"?>

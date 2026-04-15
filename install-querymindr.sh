@@ -137,9 +137,12 @@ fi
 # ---------------------------------------------------------------
 echo "6/6  Installing launch agents..."
 
-# Stop existing services if running
+# Stop existing services if running (both new name and old pre-rename name)
 launchctl unload "$PLIST_FILE" 2>/dev/null || true
 launchctl unload "$MENUBAR_PLIST_FILE" 2>/dev/null || true
+launchctl unload "$HOME/Library/LaunchAgents/com.musicsavvy.filefinder.plist" 2>/dev/null || true
+launchctl unload "$HOME/Library/LaunchAgents/com.musicsavvy.filefinder.menubar.plist" 2>/dev/null || true
+sleep 1
 
 # Server launch agent
 cat > "$PLIST_FILE" << PLISTEOF
