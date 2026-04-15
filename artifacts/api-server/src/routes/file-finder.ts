@@ -747,23 +747,27 @@ router.get("/file-finder/folder-search", async (req: Request, res: Response) => 
 
     const words = q.trim().split(/\s+/).filter(Boolean);
 
-    // Extract the folder NAME (last path segment) using SQLite string functions.
-    // Formula: SUBSTR(folder, LENGTH(folder) - INSTR('X' || REVERSE(folder), '/') + 3)
-    //   - REVERSE(folder) puts the last '/' near the front
-    //   - Prepending 'X' ensures INSTR always finds a '/' (handles no-slash edge case)
-    //   - Result: only the last segment, e.g. "76 Trombones" not the full path
-    // This prevents false matches from numeric folders like "114767" containing "76"
-    // as a substring, or from ancestor path segments.
-    const folderNameExpr = `SUBSTR(folder, LENGTH(folder) - INSTR('X' || REVERSE(folder), '/') + 3)`;
-    const nameClauses = words.map(() => `LOWER(${folderNameExpr}) LIKE LOWER(?)`);
-    const nameParams = words.map((w) => `%${w}%`);
-
-    // ORDER BY LENGTH(folder) returns shallower (canonical) folders first.
+    // Step 1: Broad SQL pre-filter — any folder path containing all words anywhere.
+    // This uses SQLite's LIKE which can leverage indexes to narrow the result set fast.
+    const broadClauses = words.map(() => "LOWER(folder) LIKE LOWER(?)");
+    const broadParams = words.map((w) => `%${w}%`);
     const rows = db.prepare(
-      `SELECT DISTINCT folder FROM file_index WHERE ${nameClauses.join(" AND ")} ORDER BY LENGTH(folder), folder LIMIT 50`
-    ).all(...nameParams) as { folder: string }[];
+      `SELECT DISTINCT folder FROM file_index WHERE ${broadClauses.join(" AND ")} ORDER BY LENGTH(folder), folder LIMIT 10000`
+    ).all(...broadParams) as { folder: string }[];
 
-    res.json({ folders: rows.map((r) => r.folder) });
+    // Step 2: JS filter — keep only folders whose NAME (last segment after final '/')
+    // contains all query words. This eliminates false positives like a numeric folder
+    // "114767" matching "76" as a substring while "trombones" appears in an ancestor.
+    // ORDER BY LENGTH(folder) in SQL means shallower (canonical) folders rank first.
+    const matches = rows
+      .filter(({ folder }) => {
+        const name = folder.split("/").pop() ?? folder;
+        return words.every((w) => name.toLowerCase().includes(w.toLowerCase()));
+      })
+      .map((r) => r.folder)
+      .slice(0, 50);
+
+    res.json({ folders: matches });
   } catch (err: unknown) {
     res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
   }
