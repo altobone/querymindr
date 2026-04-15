@@ -747,11 +747,27 @@ router.get("/file-finder/folder-search", async (req: Request, res: Response) => 
     const conditions = words.map(() => "LOWER(folder) LIKE LOWER(?)");
     const params = words.map((w) => `%${w}%`);
 
+    // Pull all folder paths that contain the query words anywhere in the path.
+    // We then post-process to find the shallowest folder SEGMENT whose name
+    // matches the query — e.g. "drone" in path /Volumes/Thunderbay/Drone footage/sub
+    // yields /Volumes/Thunderbay/Drone footage, not the subfolder.
     const rows = db.prepare(
-      `SELECT DISTINCT folder FROM file_index WHERE ${conditions.join(" AND ")} ORDER BY folder LIMIT 50`
+      `SELECT DISTINCT folder FROM file_index WHERE ${conditions.join(" AND ")} ORDER BY folder LIMIT 2000`
     ).all(...params) as { folder: string }[];
 
-    res.json({ folders: rows.map((r) => r.folder) });
+    const matchingFolders = new Set<string>();
+    for (const { folder } of rows) {
+      const parts = folder.split("/");
+      for (let i = 0; i < parts.length; i++) {
+        const segment = parts[i];
+        if (words.every((w) => segment.toLowerCase().includes(w.toLowerCase()))) {
+          matchingFolders.add(parts.slice(0, i + 1).join("/"));
+          break; // Only the shallowest matching ancestor
+        }
+      }
+    }
+
+    res.json({ folders: [...matchingFolders].sort().slice(0, 50) });
   } catch (err: unknown) {
     res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
   }

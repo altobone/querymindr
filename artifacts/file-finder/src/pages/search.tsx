@@ -61,6 +61,21 @@ export default function SearchPage() {
     }
   }, [isAiSearch]);
 
+  // Folder search fires reactively as the user types (debounced 300ms)
+  useEffect(() => {
+    if (isAiSearch || !query.trim()) {
+      setFolderResults([]);
+      return;
+    }
+    const timer = setTimeout(() => {
+      fetch(`/api/file-finder/folder-search?q=${encodeURIComponent(query.trim())}`)
+        .then((r) => r.json())
+        .then((data) => setFolderResults(data.folders || []))
+        .catch(() => setFolderResults([]));
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [query, isAiSearch]);
+
   const handleSearch = () => {
     setSimilarResults(null);
     if (isAiSearch && query) {
@@ -78,15 +93,6 @@ export default function SearchPage() {
         }
       });
     } else {
-      // Fetch matching folders in parallel with file results
-      if (query.trim()) {
-        fetch(`/api/file-finder/folder-search?q=${encodeURIComponent(query.trim())}`)
-          .then((r) => r.json())
-          .then((data) => setFolderResults(data.folders || []))
-          .catch(() => setFolderResults([]));
-      } else {
-        setFolderResults([]);
-      }
       refetchSearch();
     }
   };
