@@ -12,9 +12,12 @@ PORT="${PORT:-8080}"
 INSTALL_DIR="$HOME/.file-finder"
 PLIST_LABEL="com.musicsavvy.filefinder"
 PLIST_FILE="$HOME/Library/LaunchAgents/$PLIST_LABEL.plist"
+MENUBAR_PLIST_LABEL="com.musicsavvy.filefinder.menubar"
+MENUBAR_PLIST_FILE="$HOME/Library/LaunchAgents/$MENUBAR_PLIST_LABEL.plist"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 NODE_BIN="$(which node)"
 PNPM_BIN="$(which pnpm)"
+SWIFT_BIN="$(which swiftc 2>/dev/null || echo "")"
 
 echo ""
 echo "╔══════════════════════════════════════╗"
@@ -39,28 +42,28 @@ cd "$SCRIPT_DIR"
 # ---------------------------------------------------------------
 # Step 1: Install dependencies
 # ---------------------------------------------------------------
-echo "1/5  Installing dependencies (this takes a few minutes the first time)..."
+echo "1/6  Installing dependencies (this takes a few minutes the first time)..."
 "$PNPM_BIN" install --filter @workspace/file-finder... --filter @workspace/api-server...
 echo "     Dependencies ready."
 
 # ---------------------------------------------------------------
 # Step 2: Build the frontend
 # ---------------------------------------------------------------
-echo "2/5  Building frontend..."
+echo "2/6  Building frontend..."
 NODE_ENV=production BASE_PATH=/file-finder/ "$PNPM_BIN" --filter @workspace/file-finder run build
 echo "     Frontend built."
 
 # ---------------------------------------------------------------
 # Step 3: Build the backend
 # ---------------------------------------------------------------
-echo "3/5  Building server..."
+echo "3/6  Building server..."
 "$PNPM_BIN" --filter @workspace/api-server run build
 echo "     Server built."
 
 # ---------------------------------------------------------------
 # Step 4: Copy everything to the permanent install directory
 # ---------------------------------------------------------------
-echo "4/5  Installing to $INSTALL_DIR..."
+echo "4/6  Installing to $INSTALL_DIR..."
 mkdir -p "$INSTALL_DIR"
 
 # Copy server dist
@@ -73,13 +76,38 @@ cp -r artifacts/file-finder/dist/public/* "$INSTALL_DIR/public/"
 echo "     Files installed."
 
 # ---------------------------------------------------------------
-# Step 4: Install macOS launch agent (auto-start at login)
+# Step 5: Build menu bar app (requires Xcode Command Line Tools)
 # ---------------------------------------------------------------
-echo "5/5  Installing launch agent..."
+echo "5/6  Building menu bar app..."
 
-# Stop existing service if running
+if [ -z "$SWIFT_BIN" ]; then
+  echo "     ⚠️  swiftc not found — skipping menu bar."
+  echo "     To install: xcode-select --install, then re-run this script."
+  MENUBAR_BUILT=false
+else
+  swiftc menu-bar/MenuBar.swift \
+    -framework Cocoa \
+    -framework Foundation \
+    -O \
+    -o "$INSTALL_DIR/FileFinder-MenuBar" 2>&1 && MENUBAR_BUILT=true || MENUBAR_BUILT=false
+
+  if [ "$MENUBAR_BUILT" = true ]; then
+    echo "     Menu bar app built."
+  else
+    echo "     ⚠️  Menu bar build failed — skipping. The web app will still work."
+  fi
+fi
+
+# ---------------------------------------------------------------
+# Step 6: Install macOS launch agents (auto-start at login)
+# ---------------------------------------------------------------
+echo "6/6  Installing launch agents..."
+
+# Stop existing services if running
 launchctl unload "$PLIST_FILE" 2>/dev/null || true
+launchctl unload "$MENUBAR_PLIST_FILE" 2>/dev/null || true
 
+# Server launch agent
 cat > "$PLIST_FILE" << PLISTEOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -122,10 +150,43 @@ cat > "$PLIST_FILE" << PLISTEOF
 </plist>
 PLISTEOF
 
-# Load and start the service
 launchctl load "$PLIST_FILE"
 
-echo "     Launch agent installed."
+# Menu bar launch agent (only if built successfully)
+if [ "$MENUBAR_BUILT" = true ]; then
+  cat > "$MENUBAR_PLIST_FILE" << PLISTEOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>$MENUBAR_PLIST_LABEL</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>$INSTALL_DIR/FileFinder-MenuBar</string>
+    </array>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <true/>
+
+    <key>StandardOutPath</key>
+    <string>$INSTALL_DIR/menubar.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>$INSTALL_DIR/menubar-error.log</string>
+</dict>
+</plist>
+PLISTEOF
+
+  launchctl load "$MENUBAR_PLIST_FILE"
+  echo "     Menu bar agent installed."
+fi
+
+echo "     Launch agents installed."
 echo ""
 echo "Waiting for server to start..."
 for i in {1..15}; do
@@ -142,7 +203,12 @@ echo "╚═══════════════════════�
 echo ""
 echo "  App URL : http://localhost:$PORT/file-finder/"
 echo ""
-echo "  The server now runs automatically in the background."
+if [ "$MENUBAR_BUILT" = true ]; then
+echo "  A magnifying glass icon 🔍 is now in your menu bar."
+echo "  Click it to open the app or run a Quick Update."
+echo ""
+fi
+echo "  The server runs automatically in the background."
 echo "  No Terminal needed. It starts at every login."
 echo ""
 echo "  To stop the service:"
