@@ -37,10 +37,10 @@ app.use("/api", router);
 
 // Serve the built frontend from the public/ directory next to this server
 const publicDir = path.join(__dirname, "public");
-app.use("/file-finder", express.static(publicDir));
-app.get("/file-finder/*splat", (_req, res) => {
+app.use("/querymindr", express.static(publicDir));
+app.get("/querymindr/*splat", (_req, res) => {
   res.sendFile(path.join(publicDir, "index.html"));
 });
-app.get("/", (_req, res) => res.redirect("/file-finder/"));
+app.get("/", (_req, res) => res.redirect("/querymindr/"));
 
 export default app;

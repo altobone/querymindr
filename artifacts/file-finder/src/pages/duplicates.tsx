@@ -8,7 +8,7 @@ import { Copy, HardDrive, Trash2, Maximize2, Search, Zap } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 async function deleteFiles(paths: string[]): Promise<void> {
-  const res = await fetch("/api/file-finder/files", {
+  const res = await fetch("/api/querymindr/files", {
     method: "DELETE",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ paths }),

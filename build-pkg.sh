@@ -123,8 +123,8 @@ SRC_DIR="/usr/local/lib/querymindr"
 NODE_BIN="$SRC_DIR/node"
 PORT="8080"
 ROOT_DIR="/Volumes/Thunderbay"
-PLIST_LABEL="com.musicsavvy.filefinder"
-MENUBAR_PLIST_LABEL="com.musicsavvy.filefinder.menubar"
+PLIST_LABEL="com.musicsavvy.querymindr"
+MENUBAR_PLIST_LABEL="com.musicsavvy.querymindr.menubar"
 
 # Find the currently logged-in user (installer runs as root)
 CURRENT_USER=$(stat -f "%Su" /dev/console 2>/dev/null || echo "$SUDO_USER")
@@ -136,7 +136,7 @@ if [ -z "$USER_HOME" ]; then
   USER_HOME="/Users/$CURRENT_USER"
 fi
 
-INSTALL_DIR="$USER_HOME/.file-finder"
+INSTALL_DIR="$USER_HOME/.querymindr"
 PLIST_FILE="$USER_HOME/Library/LaunchAgents/$PLIST_LABEL.plist"
 MENUBAR_PLIST_FILE="$USER_HOME/Library/LaunchAgents/$MENUBAR_PLIST_LABEL.plist"
 
@@ -257,13 +257,13 @@ fi
 # ------------------------------------------------------------------
 sleep 4
 for i in $(seq 1 15); do
-  if curl -s "http://localhost:$PORT/api/file-finder/stats" > /dev/null 2>&1; then
+  if curl -s "http://localhost:$PORT/api/querymindr/stats" > /dev/null 2>&1; then
     break
   fi
   sleep 1
 done
 
-su - "$CURRENT_USER" -c "open 'http://localhost:$PORT/file-finder/'" 2>/dev/null || true
+su - "$CURRENT_USER" -c "open 'http://localhost:$PORT/querymindr/'" 2>/dev/null || true
 
 exit 0
 POSTINSTALL
@@ -316,16 +316,16 @@ cat > "$STAGING/resources/readme.html" << 'READMEHTML'
   <h2>What gets installed</h2>
   <ul>
     <li>App files → <code>/usr/local/lib/querymindr/</code></li>
-    <li>Your personal data → <code>~/.file-finder/</code></li>
+    <li>Your personal data → <code>~/.querymindr/</code></li>
     <li>Launch agent → <code>~/Library/LaunchAgents/</code></li>
   </ul>
   <h2>How to open the app</h2>
-  <p>Open your browser and go to: <code>http://localhost:8080/file-finder/</code></p>
+  <p>Open your browser and go to: <code>http://localhost:8080/querymindr/</code></p>
   <p>Bookmark this address. The app is only accessible from your own Mac.</p>
   <h2>Stopping and starting</h2>
   <ul>
-    <li>To stop: <code>launchctl unload ~/Library/LaunchAgents/com.musicsavvy.filefinder.plist</code></li>
-    <li>To restart: <code>launchctl load ~/Library/LaunchAgents/com.musicsavvy.filefinder.plist</code></li>
+    <li>To stop: <code>launchctl unload ~/Library/LaunchAgents/com.musicsavvy.querymindr.plist</code></li>
+    <li>To restart: <code>launchctl load ~/Library/LaunchAgents/com.musicsavvy.querymindr.plist</code></li>
   </ul>
   <h2>Your drive path</h2>
   <p>Querymindr defaults to <code>/Volumes/Thunderbay</code>. To change it, open the app and go to <strong>Settings → Index Engine</strong>.</p>

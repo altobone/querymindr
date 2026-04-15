@@ -4,8 +4,8 @@ import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
 
-const DB_DIR = path.join(os.homedir(), ".config", "file-finder");
-export const DB_PATH = path.join(DB_DIR, "file-finder.db");
+const DB_DIR = path.join(os.homedir(), ".config", "querymindr");
+export const DB_PATH = path.join(DB_DIR, "querymindr.db");
 
 fs.mkdirSync(DB_DIR, { recursive: true });
 

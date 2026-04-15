@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 
-const MODEL_STORAGE_KEY = "file-finder-ai-model";
+const MODEL_STORAGE_KEY = "querymindr-ai-model";
 const MODEL_OPTIONS = [
   { value: "claude-haiku-4-5", label: "Claude Haiku", description: "Faster & cheaper — great for most searches" },
   { value: "claude-sonnet-4-5", label: "Claude Sonnet", description: "More powerful — better for complex queries" },
@@ -46,12 +46,12 @@ export default function SettingsPage() {
   const { toast } = useToast();
 
   useEffect(() => {
-    fetch("/api/file-finder/ai-config")
+    fetch("/api/querymindr/ai-config")
       .then((r) => r.json())
       .then((d: { configured: boolean }) => setApiKeyStatus(d.configured ? "configured" : "missing"))
       .catch(() => setApiKeyStatus("missing"));
 
-    fetch("/api/file-finder/app-config")
+    fetch("/api/querymindr/app-config")
       .then((r) => r.json())
       .then((d: { auto_index_interval_hours: number; checksum_limit_mb: number; root_dirs: string[] }) => {
         setScheduleInterval(String(d.auto_index_interval_hours ?? 12));
@@ -63,7 +63,7 @@ export default function SettingsPage() {
 
   const saveAppConfig = async (patch: { auto_index_interval_hours?: number; checksum_limit_mb?: number; root_dirs?: string[] }) => {
     try {
-      await fetch("/api/file-finder/app-config", {
+      await fetch("/api/querymindr/app-config", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(patch),
@@ -106,7 +106,7 @@ export default function SettingsPage() {
   const handleSaveApiKey = async () => {
     setSavingKey(true);
     try {
-      const res = await fetch("/api/file-finder/ai-config", {
+      const res = await fetch("/api/querymindr/ai-config", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ api_key: apiKey }),
@@ -165,7 +165,7 @@ export default function SettingsPage() {
     if (rootDirs.length === 0 || isRunning) return;
     setIncrementalRunning(true);
     try {
-      await fetch("/api/file-finder/index/incremental", {
+      await fetch("/api/querymindr/index/incremental", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}),
@@ -231,7 +231,7 @@ export default function SettingsPage() {
                   <Button variant="ghost" onClick={async () => {
                     setSavingKey(true);
                     try {
-                      await fetch("/api/file-finder/ai-config", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ api_key: "" }) });
+                      await fetch("/api/querymindr/ai-config", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ api_key: "" }) });
                       setApiKeyStatus("missing");
                       setApiKey("");
                       toast({ title: "API Key Cleared" });
