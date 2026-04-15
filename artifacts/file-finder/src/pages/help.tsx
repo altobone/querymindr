@@ -11,6 +11,9 @@ import {
   RefreshCw,
   Zap,
   BookOpen,
+  Fingerprint,
+  TriangleAlert,
+  Trash2,
 } from "lucide-react";
 
 interface FeatureCardProps {
@@ -78,6 +81,7 @@ export default function HelpPage() {
               Querymindr is a local search tool built for large external drives. It indexes every file
               on your drive into a fast database on your Mac — then lets you search by word, partial
               title, or plain language in seconds, no matter how many terabytes you have.
+              It also scans for duplicate files so you can reclaim wasted space without guessing.
               Everything runs on your machine. Your files never leave your computer.
             </p>
             <p className="text-muted-foreground leading-relaxed">
@@ -120,9 +124,9 @@ export default function HelpPage() {
                 description="Click any file to open its detail panel, then click Find More Like This to surface related files based on naming patterns."
               />
               <FeatureCard
-                icon={<Copy className="w-5 h-5" />}
+                icon={<Fingerprint className="w-5 h-5" />}
                 title="Duplicate Finder"
-                description="The Duplicates page scans your index for files with identical content (by checksum) so you can safely remove copies and reclaim space."
+                description="The Duplicates page scans your index for files with identical content (by checksum) so you can safely identify and remove copies to reclaim space."
               />
               <FeatureCard
                 icon={<Sparkles className="w-5 h-5" />}
@@ -210,6 +214,83 @@ export default function HelpPage() {
                   <span className="text-foreground font-medium">console.anthropic.com</span>.
                   The AI Magic and Summary features will appear in the search bar automatically.
                 </p>
+              </div>
+
+            </div>
+          </section>
+
+          {/* Duplicates */}
+          <section>
+            <div className="flex items-center gap-2 mb-1">
+              <div className="h-px w-6 bg-primary" />
+              <span className="text-xs font-semibold uppercase tracking-wider text-primary">Duplicates</span>
+            </div>
+            <h2 className="text-xl font-bold text-foreground mb-2">Using the Duplicate Finder</h2>
+            <p className="text-sm text-muted-foreground leading-relaxed mb-5">
+              Large drives accumulate duplicate files over time — backups copied twice, folders
+              synced in multiple places, downloads saved more than once. The Duplicates page finds
+              them all and shows you exactly how much space you can get back.
+            </p>
+            <div className="space-y-4">
+
+              <div className="bg-card border border-border rounded-lg p-5">
+                <div className="flex items-start gap-3">
+                  <Fingerprint className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                  <div>
+                    <h3 className="font-semibold text-foreground text-sm mb-1.5">How it works</h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      Querymindr computes a unique <strong className="text-foreground">checksum</strong> (a digital fingerprint)
+                      for every file during indexing. Two files are only flagged as duplicates if their
+                      content is byte-for-byte identical — not just if they have the same name or size.
+                      This means you'll never get false positives.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-card border border-border rounded-lg p-5">
+                <div className="flex items-start gap-3">
+                  <Search className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                  <div>
+                    <h3 className="font-semibold text-foreground text-sm mb-1.5">Running a scan</h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      Click <strong className="text-foreground">Duplicates</strong> in the sidebar. Results are
+                      grouped by content — each group shows all the copies of the same file, their
+                      locations, sizes, and the total space consumed by the duplicates. You can filter
+                      by file type or minimum file size to focus on what matters most.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-card border border-border rounded-lg p-5">
+                <div className="flex items-start gap-3">
+                  <Trash2 className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                  <div>
+                    <h3 className="font-semibold text-foreground text-sm mb-1.5">Removing duplicates</h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      Click <strong className="text-foreground">Reveal in Finder</strong> on any file to locate it
+                      on disk before deleting. Always keep at least one copy from each group —
+                      Querymindr shows you all the locations so you can decide which one to keep
+                      and which to remove.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-card border border-border rounded-lg p-5 border-amber-500/20">
+                <div className="flex items-start gap-3">
+                  <TriangleAlert className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <h3 className="font-semibold text-foreground text-sm mb-1.5">Before you delete</h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      Querymindr shows you the duplicates — it does not delete anything automatically.
+                      Always review each group in Finder before removing files, and make sure you have
+                      a backup of anything important. Checksums confirm identical content, but you
+                      still decide what stays.
+                    </p>
+                  </div>
+                </div>
               </div>
 
             </div>
