@@ -426,28 +426,35 @@ router.get("/file-finder/search", async (req: Request, res: Response) => {
     if (query.trim()) {
       const q = query.trim();
 
-      // Split into individual words so every word must appear in the name or path.
-      // This prevents "tictock talk" from fuzzy-matching unrelated files like
-      // "Stick Alkaloid" just because "alk" appears in both "talk" and "Alkaloid".
+      // Split into words — each word must appear in the filename.
+      // Searching name only (not path) keeps results predictable.
+      // Word-level matching handles separators: "76-trombones" matches "76 trombones"
+      // because both "76" and "trombones" are substrings of "76-trombones".
       const words = q.split(/\s+/).filter(Boolean);
 
-      // Build a clause that requires ALL words to match somewhere in name+path:
-      // (name LIKE %w1% OR path LIKE %w1%) AND (name LIKE %w2% OR path LIKE %w2%) ...
-      const wordClauses = words.map(() => "(LOWER(name) LIKE LOWER(?) OR LOWER(path) LIKE LOWER(?))");
-      const wordParams: (string | number)[] = words.flatMap((w) => [`%${w}%`, `%${w}%`]);
+      // Stage 1: all words must appear in the filename
+      const wordClauses = words.map(() => "LOWER(name) LIKE LOWER(?)");
+      const wordParams: (string | number)[] = words.map((w) => `%${w}%`);
 
       const nameConditions = [...conditions, ...wordClauses];
       const nameParams: (string | number)[] = [...params, ...wordParams];
       const nameWhere = `WHERE ${nameConditions.join(" AND ")}`;
       const exact = db.prepare(`SELECT * FROM file_index ${nameWhere} ORDER BY ${sortCol} ${order}`).all(...nameParams) as FileRow[];
 
-      // Sort so files whose name contains the full query string appear first,
-      // then files that match only via folder/path.
-      allFiles = exact.sort((a, b) => {
-        const aFull = a.name.toLowerCase().includes(q.toLowerCase()) ? 0 : 1;
-        const bFull = b.name.toLowerCase().includes(q.toLowerCase()) ? 0 : 1;
-        return aFull - bFull;
-      });
+      if (exact.length > 0) {
+        // Sort so files whose name contains the full query phrase first
+        allFiles = exact.sort((a, b) => {
+          const aFull = a.name.toLowerCase().includes(q.toLowerCase()) ? 0 : 1;
+          const bFull = b.name.toLowerCase().includes(q.toLowerCase()) ? 0 : 1;
+          return aFull - bFull;
+        });
+      } else {
+        // Stage 2: fuzzy fallback on filename only — catches misspellings like
+        // "trambones" → "trombones". Never matches on folder path.
+        const base = db.prepare(`SELECT * FROM file_index ${where} ORDER BY ${sortCol} ${order}`).all(...params) as FileRow[];
+        const fuse = new Fuse(base, { keys: ["name"], threshold: 0.35, includeScore: true });
+        allFiles = fuse.search(q).map((r) => r.item);
+      }
     } else {
       allFiles = db.prepare(`SELECT * FROM file_index ${where} ORDER BY ${sortCol} ${order}`).all(...params) as FileRow[];
     }
