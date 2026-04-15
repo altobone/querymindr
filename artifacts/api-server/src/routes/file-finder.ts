@@ -276,6 +276,25 @@ async function runIncrementalIndexing(rootDirs: string[], jobId: number) {
         indexed_at = datetime('now')
     `);
 
+    // Fast count-only pre-pass: stat comparisons only, no file reading — memory stays flat
+    let total = 0;
+    for (const dir of changedDirs) {
+      const dbRows = db.prepare("SELECT path, modified_at, inode FROM file_index WHERE folder = ?").all(dir) as { path: string; modified_at: string | null; inode: number | null }[];
+      const dbFiles = new Map(dbRows.map(r => [r.path, r]));
+      let entries: fs.Dirent[] = [];
+      try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch { continue; }
+      for (const entry of entries) {
+        if (!entry.isFile()) continue;
+        const filePath = path.join(dir, entry.name);
+        try {
+          const stat = fs.statSync(filePath);
+          const existing = dbFiles.get(filePath);
+          if (!existing || stat.mtime.toISOString() !== existing.modified_at || stat.ino !== existing.inode) total++;
+        } catch { }
+      }
+    }
+    db.prepare("UPDATE indexing_jobs SET total_files = ? WHERE id = ?").run(total, jobId);
+
     const checksumLimitMb = readConfigFile().checksum_limit_mb ?? 100;
     let processed = 0;
     let progressCounter = 0;
