@@ -2,7 +2,7 @@
 set -e
 
 # ---------------------------------------------------------------
-# File Finder - Linux Install Script
+# Querymindr - Linux Install Script
 # Builds the app and installs it as a systemd user service
 # that starts automatically at login — no Terminal needed.
 # ---------------------------------------------------------------
@@ -19,7 +19,7 @@ PNPM_BIN="$(which pnpm)"
 
 echo ""
 echo "╔══════════════════════════════════════╗"
-echo "║   File Finder - Install & Start      ║"
+echo "║   Querymindr - Install & Start       ║"
 echo "╚══════════════════════════════════════╝"
 echo ""
 echo "Drive path : $ROOT_DIR"
@@ -100,7 +100,7 @@ systemctl --user disable "$SERVICE_NAME" 2>/dev/null || true
 
 cat > "$SERVICE_FILE" << SERVICEEOF
 [Unit]
-Description=File Finder Server
+Description=Querymindr Server
 After=network.target
 
 [Service]
@@ -138,7 +138,7 @@ done
 
 echo ""
 echo "╔══════════════════════════════════════╗"
-echo "║   Installation complete!             ║"
+echo "║   Querymindr installed!              ║"
 echo "╚══════════════════════════════════════╝"
 echo ""
 echo "  App URL : http://localhost:$PORT/file-finder/"

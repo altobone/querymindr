@@ -2,7 +2,7 @@
 set -e
 
 # ---------------------------------------------------------------
-# File Finder - One-Time Install Script
+# Querymindr - One-Time Install Script
 # Builds the app and installs it as a macOS background service
 # that starts automatically at login — no Terminal needed.
 # ---------------------------------------------------------------
@@ -21,7 +21,7 @@ SWIFT_BIN="$(which swiftc 2>/dev/null || echo "")"
 
 echo ""
 echo "╔══════════════════════════════════════╗"
-echo "║   File Finder - Install & Start      ║"
+echo "║   Querymindr - Install & Start       ║"
 echo "╚══════════════════════════════════════╝"
 echo ""
 echo "Drive path : $ROOT_DIR"
@@ -198,7 +198,7 @@ done
 
 echo ""
 echo "╔══════════════════════════════════════╗"
-echo "║   Installation complete!             ║"
+echo "║   Querymindr installed!              ║"
 echo "╚══════════════════════════════════════╝"
 echo ""
 echo "  App URL : http://localhost:$PORT/file-finder/"

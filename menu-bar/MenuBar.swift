@@ -4,7 +4,7 @@ import Foundation
 // ---------------------------------------------------------------
 // Configuration — update these when rebranding
 // ---------------------------------------------------------------
-let APP_NAME    = "File Finder"
+let APP_NAME    = "Querymindr"
 let APP_URL     = "http://localhost:8080/file-finder/"
 let API_BASE    = "http://localhost:8080/api/file-finder"
 let POLL_SECS   = 5.0
