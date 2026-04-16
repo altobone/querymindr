@@ -23,8 +23,9 @@ interface LicenseStatus {
 function Router({ licenseStatus, onActivated }: { licenseStatus: LicenseStatus | null; onActivated: () => void }) {
   const [showWelcome, setShowWelcome] = useState(() => !hasSeenWelcome());
 
-  // Trial expired gate
-  if (licenseStatus && !licenseStatus.licensed && licenseStatus.daysRemaining === 0) {
+  // Trial expired gate — also triggered by ?preview=expired for styling review
+  const forcePreview = new URLSearchParams(window.location.search).get("preview") === "expired";
+  if (forcePreview || (licenseStatus && !licenseStatus.licensed && licenseStatus.daysRemaining === 0)) {
     return <TrialExpiredPage onActivated={onActivated} />;
   }
 
