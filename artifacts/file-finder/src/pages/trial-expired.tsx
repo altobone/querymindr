@@ -68,8 +68,11 @@ export default function TrialExpiredPage({ onActivated }: Props) {
 
         {/* Header */}
         <div className="text-center space-y-2">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 mb-2">
-            <KeyRound className="w-8 h-8 text-indigo-400" />
+          <div
+            className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-2"
+            style={{ background: "rgba(232,255,71,0.1)", border: "1px solid rgba(232,255,71,0.2)" }}
+          >
+            <KeyRound className="w-8 h-8" style={{ color: "#e8ff47" }} />
           </div>
           <h1 className="text-2xl font-bold text-white">Your trial has ended</h1>
           <p className="text-gray-400 text-sm leading-relaxed">
@@ -78,10 +81,10 @@ export default function TrialExpiredPage({ onActivated }: Props) {
         </div>
 
         {/* Buy card */}
-        <Card className="bg-gray-900 border-indigo-500/30">
+        <Card className="bg-gray-900" style={{ borderColor: "rgba(232,255,71,0.3)" }}>
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg flex items-center gap-2">
-              <ShoppingCart className="w-5 h-5 text-indigo-400" />
+              <ShoppingCart className="w-5 h-5" style={{ color: "#e8ff47" }} />
               Querymindr — $29 one-time
             </CardTitle>
             <CardDescription className="text-gray-400">
@@ -97,13 +100,16 @@ export default function TrialExpiredPage({ onActivated }: Props) {
                 "Runs completely offline — your files never leave your computer",
               ].map(f => (
                 <li key={f} className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-indigo-400 mt-0.5 shrink-0" />
+                  <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" style={{ color: "#e8ff47" }} />
                   <span>{f}</span>
                 </li>
               ))}
             </ul>
             <Button
-              className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium"
+              className="w-full font-medium"
+              style={{ background: "#e8ff47", color: "#0d0d0d" }}
+              onMouseEnter={e => (e.currentTarget.style.background = "#d4eb3a")}
+              onMouseLeave={e => (e.currentTarget.style.background = "#e8ff47")}
               onClick={() => window.open(url, "_blank")}
             >
               <ShoppingCart className="w-4 h-4 mr-2" />
@@ -119,7 +125,8 @@ export default function TrialExpiredPage({ onActivated }: Props) {
                       href={PLATFORM_INFO[p].url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-indigo-400 hover:underline"
+                      className="hover:underline"
+                      style={{ color: "#e8ff47" }}
                     >
                       {p.charAt(0).toUpperCase() + p.slice(1)}
                     </a>
