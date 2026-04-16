@@ -33,6 +33,7 @@ export default function SearchPage() {
   const [browseReturnQuery, setBrowseReturnQuery] = useState<string>("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [aiConfigured, setAiConfigured] = useState(false);
+  const [slowSearchVisible, setSlowSearchVisible] = useState(false);
 
   const { data: foldersData } = useGetFolders();
   const { toast } = useToast();
@@ -76,6 +77,14 @@ export default function SearchPage() {
   const [aiResults, setAiResults] = useState<FileResult[]>([]);
   const [aiExplanation, setAiExplanation] = useState<string>("");
   const [similarResults, setSimilarResults] = useState<FileResult[] | null>(null);
+
+  // Show a hint after 1.5s of loading — exact searches finish instantly,
+  // so anything slower is almost certainly a fuzzy (approximate) search.
+  useEffect(() => {
+    if (!isSearchLoading) { setSlowSearchVisible(false); return; }
+    const t = setTimeout(() => setSlowSearchVisible(true), 1500);
+    return () => clearTimeout(t);
+  }, [isSearchLoading]);
 
   useEffect(() => {
     if (!isAiSearch) {
@@ -229,6 +238,13 @@ export default function SearchPage() {
               )}
             </Button>
           </div>
+
+          {slowSearchVisible && isSearchLoading && !isAiSearch && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground animate-pulse">
+              <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />
+              No exact match found — searching for approximate results…
+            </div>
+          )}
 
           {!isAiSearch && (
             <div className="flex items-center gap-4 text-sm">
