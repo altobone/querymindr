@@ -86,7 +86,7 @@ export default function DuplicatesPage() {
       <div className="border-b border-border bg-card p-6 flex flex-col gap-4 shrink-0">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-semibold tracking-tight">Duplicate Files</h2>
+            <h2 className="text-xl font-semibold tracking-tight" style={{ color: "#e8ff47" }}>Duplicate Files</h2>
             <p className="text-sm text-muted-foreground mt-1">
               {isLoading ? "Scanning…" : `${groups.length} duplicate sets · `}
               {!isLoading && <span className="text-destructive font-medium">{formatBytes(totalWasted)} wasted</span>}

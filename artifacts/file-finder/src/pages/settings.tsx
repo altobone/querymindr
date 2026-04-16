@@ -230,7 +230,7 @@ export default function SettingsPage() {
   return (
     <div className="flex flex-col h-full bg-background">
       <div className="border-b border-border bg-card p-6 shrink-0">
-        <h2 className="text-xl font-semibold tracking-tight">Settings & Indexing</h2>
+        <h2 className="text-xl font-semibold tracking-tight" style={{ color: "#e8ff47" }}>Settings & Indexing</h2>
         <p className="text-sm text-muted-foreground mt-1">Configure root directories and monitor background indexing.</p>
       </div>
 

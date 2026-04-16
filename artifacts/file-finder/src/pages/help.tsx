@@ -66,7 +66,7 @@ export default function HelpPage() {
         <div className="flex items-center gap-3">
           <BookOpen className="w-5 h-5 text-primary" />
           <div>
-            <h1 className="text-lg font-semibold text-foreground">Help & Guide</h1>
+            <h1 className="text-lg font-semibold" style={{ color: "#e8ff47" }}>Help & Guide</h1>
             <p className="text-sm text-muted-foreground">Everything you need to know about Querymindr.</p>
           </div>
         </div>
