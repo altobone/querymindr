@@ -433,9 +433,9 @@ export default function SearchPage() {
 
             {/* Fuzzy match banner */}
             {!isLoading && !isAiSearch && (searchResults as { fuzzy?: boolean })?.fuzzy && files.length > 0 && (
-              <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-muted/50 border border-border text-xs text-muted-foreground">
-                <Search className="w-3.5 h-3.5 shrink-0" />
-                No exact matches — showing approximate results for <span className="font-medium text-foreground mx-1">"{debouncedQuery}"</span>
+              <div className="flex items-center gap-2 px-3 py-2 rounded-md text-xs" style={{ color: "#e8ff47", backgroundColor: "rgba(232,255,71,0.07)", border: "1px solid rgba(232,255,71,0.25)" }}>
+                <Search className="w-3.5 h-3.5 shrink-0" style={{ color: "#e8ff47" }} />
+                No exact matches — showing approximate results for <span className="font-medium mx-1" style={{ color: "#e8ff47" }}>"{debouncedQuery}"</span>
               </div>
             )}
 
