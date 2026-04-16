@@ -9,7 +9,8 @@ import Anthropic from "@anthropic-ai/sdk";
 import fg from "fast-glob";
 import Fuse from "fuse.js";
 import mime from "mime-types";
-import { db, FileRow, JobRow } from "../lib/querymindr-db";
+import { db, FileRow, JobRow, kvGet, kvSet } from "../lib/querymindr-db";
+import { validateKey } from "../lib/querymindr-license";
 
 const router: IRouter = Router();
 const execAsync = promisify(exec);
@@ -870,5 +871,71 @@ function scheduleAutoIndex() {
 }
 
 scheduleAutoIndex();
+
+// ---------------------------------------------------------------------------
+// License / trial endpoints
+// ---------------------------------------------------------------------------
+
+const TRIAL_DAYS = 7;
+const TRIAL_FILE = path.join(os.homedir(), ".config", "querymindr", ".trial");
+
+function getInstallDate(): Date {
+  // Prefer the earlier of two stored dates: DB and hidden file.
+  // This means resetting one doesn't reset the trial.
+  const dates: Date[] = [];
+
+  const dbVal = kvGet("install_date");
+  if (dbVal) dates.push(new Date(dbVal));
+
+  try {
+    const fileVal = fs.readFileSync(TRIAL_FILE, "utf8").trim();
+    if (fileVal) dates.push(new Date(fileVal));
+  } catch { }
+
+  if (dates.length === 0) {
+    // First run — record install date in both places
+    const now = new Date().toISOString();
+    kvSet("install_date", now);
+    try { fs.writeFileSync(TRIAL_FILE, now, { mode: 0o600 }); } catch { }
+    return new Date(now);
+  }
+
+  // Use the earliest recorded date
+  return new Date(Math.min(...dates.map(d => d.getTime())));
+}
+
+function getLicenseStatus(): { licensed: boolean; daysRemaining: number; installDate: string } {
+  const key = kvGet("license_key");
+  if (key && validateKey(key)) {
+    return { licensed: true, daysRemaining: 999, installDate: getInstallDate().toISOString() };
+  }
+
+  const installDate = getInstallDate();
+  const msPerDay = 1000 * 60 * 60 * 24;
+  const elapsed = Math.floor((Date.now() - installDate.getTime()) / msPerDay);
+  const daysRemaining = Math.max(0, TRIAL_DAYS - elapsed);
+
+  return { licensed: false, daysRemaining, installDate: installDate.toISOString() };
+}
+
+// GET /querymindr/license/status
+router.get("/querymindr/license/status", (_req: Request, res: Response) => {
+  res.json(getLicenseStatus());
+});
+
+// POST /querymindr/license/activate
+router.post("/querymindr/license/activate", (req: Request, res: Response) => {
+  const { key } = req.body as { key?: string };
+  if (!key || typeof key !== "string") {
+    res.status(400).json({ ok: false, message: "No key provided." });
+    return;
+  }
+  if (!validateKey(key.trim())) {
+    res.status(400).json({ ok: false, message: "Invalid license key. Please check for typos and try again." });
+    return;
+  }
+  kvSet("license_key", key.trim().toUpperCase());
+  res.json({ ok: true, message: "License activated. Thank you!" });
+});
 
 export default router;
