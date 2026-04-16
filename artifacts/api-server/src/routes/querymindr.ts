@@ -423,6 +423,7 @@ router.get("/querymindr/search", async (req: Request, res: Response) => {
     const order = sort_order === "asc" ? "ASC" : "DESC";
 
     let allFiles: FileRow[] = [];
+    let fuzzyUsed = false;
 
     if (query.trim()) {
       const q = query.trim();
@@ -450,6 +451,7 @@ router.get("/querymindr/search", async (req: Request, res: Response) => {
           return aFull - bFull;
         });
       } else if (q.length >= 3) {
+        fuzzyUsed = true;
         // Stage 2: per-word fuzzy fallback — only fires when zero exact matches.
         // Each word is matched independently then intersected, so a 1-char typo
         // in one word ("trombonesw" → "trombones") doesn't kill the whole query.
@@ -477,7 +479,7 @@ router.get("/querymindr/search", async (req: Request, res: Response) => {
     const total = allFiles.length;
     const paged = allFiles.slice(offset, offset + limitNum);
 
-    res.json({ files: paged.map(formatFileResult), total, page: pageNum, limit: limitNum });
+    res.json({ files: paged.map(formatFileResult), total, page: pageNum, limit: limitNum, fuzzy: fuzzyUsed });
   } catch (err: unknown) {
     res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
   }
