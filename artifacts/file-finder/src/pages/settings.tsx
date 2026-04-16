@@ -577,7 +577,7 @@ export default function SettingsPage() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
-                  <HardDrive className="w-5 h-5 text-primary" />
+                  <HardDrive className="w-5 h-5" style={{ color: "#e8ff47" }} />
                   Database Statistics
                 </CardTitle>
                 <CardDescription>
