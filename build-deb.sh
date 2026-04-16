@@ -16,7 +16,7 @@ set -e
 # ---------------------------------------------------------------
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-PKG_NAME="querymindr"
+PKG_NAME="querymindr-linux"
 PKG_VERSION="1.0"
 MAINTAINER="Music Savvy <support@musicsavvy.com>"
 DESCRIPTION="Local file search for large external drives"
