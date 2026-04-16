@@ -41,13 +41,14 @@ export default function Layout({ children, licenseStatus }: { children: React.Re
                   key={item.name}
                   href={item.href}
                   className={cn(
-                    "flex items-center gap-3 px-3 py-2.5 rounded-md text-sm transition-colors duration-150 outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                    "flex items-center gap-3 px-3 py-2.5 rounded-md text-sm transition-colors duration-150 outline-none focus-visible:ring-2 focus-visible:ring-ring border-l-2",
                     isActive
-                      ? "bg-secondary text-secondary-foreground font-medium"
-                      : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                      ? "bg-secondary font-medium border-[#e8ff47]"
+                      : "text-muted-foreground hover:text-foreground hover:bg-secondary/50 border-transparent"
                   )}
+                  style={isActive ? { color: "#e8ff47" } : undefined}
                 >
-                  <Icon className={cn("w-4 h-4", isActive ? "text-foreground" : "text-muted-foreground")} />
+                  <Icon className="w-4 h-4" style={isActive ? { color: "#e8ff47" } : undefined} />
                   {item.name}
                 </Link>
               );

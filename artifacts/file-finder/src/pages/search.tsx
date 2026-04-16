@@ -188,7 +188,7 @@ export default function SearchPage() {
       <div className={cn("flex-1 flex flex-col h-full transition-all duration-300", selectedFile ? "mr-96" : "")}>
         <div className="border-b border-border bg-card p-6 flex flex-col gap-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold tracking-tight">Search</h2>
+            <h2 className="text-xl font-semibold tracking-tight" style={{ color: "#e8ff47" }}>Search</h2>
             {aiConfigured && (
               <div className="flex items-center gap-3">
                 <Label htmlFor="ai-mode" className="text-sm font-medium flex items-center gap-2 cursor-pointer">
