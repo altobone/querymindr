@@ -453,11 +453,39 @@ router.get("/querymindr/search", async (req: Request, res: Response) => {
       } else if (q.length >= 3) {
         fuzzyUsed = true;
         // Stage 2: per-word fuzzy fallback — only fires when zero exact matches.
-        // Each word is matched independently then intersected, so a 1-char typo
-        // in one word ("trombonesw" → "trombones") doesn't kill the whole query.
-        // Threshold 0.35 is generous enough for common typos on short words too.
-        const base = db.prepare(`SELECT * FROM file_index ${where} ORDER BY ${sortCol} ${order}`).all(...params) as FileRow[];
-        const fuse = new Fuse(base, { keys: ["name"], threshold: 0.35, includeScore: true, ignoreLocation: true });
+        //
+        // PERFORMANCE: Instead of loading the entire table into Fuse.js (slow on large
+        // drives), we first pre-filter via SQL using an interior substring of each word
+        // (dropping the first and last character). This is robust to single-char typos
+        // at either end: "trombonesw" → core "rombones" → LIKE '%rombones%' → matches
+        // "Trombones". We then run Fuse only on those SQL-filtered candidates.
+        //
+        // Fallback: if the SQL pre-filter finds nothing (very short words or exotic typos)
+        // we fall back to a hard-capped full-table scan so the query always completes.
+
+        const FUZZY_CAP = 20_000; // never feed Fuse more than this many rows
+
+        // Build OR clauses using the interior of each word for SQL pre-filtering
+        const cores = words.map((w) => (w.length >= 5 ? w.slice(1, -1) : w));
+        const orClauses = cores.map(() => "LOWER(name) LIKE LOWER(?)").join(" OR ");
+        const orParams = cores.map((c) => `%${c}%`);
+
+        const preFilterWhere = conditions.length > 0
+          ? `WHERE ${conditions.join(" AND ")} AND (${orClauses})`
+          : `WHERE ${orClauses}`;
+
+        let candidates = db
+          .prepare(`SELECT * FROM file_index ${preFilterWhere} ORDER BY ${sortCol} ${order} LIMIT ${FUZZY_CAP}`)
+          .all(...params, ...orParams) as FileRow[];
+
+        // If pre-filter yields nothing, fall back to a capped full-table scan
+        if (candidates.length === 0) {
+          candidates = db
+            .prepare(`SELECT * FROM file_index ${where} ORDER BY ${sortCol} ${order} LIMIT ${FUZZY_CAP}`)
+            .all(...params) as FileRow[];
+        }
+
+        const fuse = new Fuse(candidates, { keys: ["name"], threshold: 0.35, includeScore: true, ignoreLocation: true });
 
         // Match each word separately; keep only files that match ALL words
         const wordSets = words.map((w) => {
@@ -466,8 +494,9 @@ router.get("/querymindr/search", async (req: Request, res: Response) => {
         });
         const matchedIds = wordSets.reduce((acc, set) => new Set([...acc].filter((id) => set.has(id))));
 
-        // Preserve score ordering from the first (longest) word's results
-        const longestWordResults = fuse.search(words.reduce((a, b) => (a.length >= b.length ? a : b)));
+        // Preserve score ordering from the longest word's results
+        const longestWord = words.reduce((a, b) => (a.length >= b.length ? a : b));
+        const longestWordResults = fuse.search(longestWord);
         allFiles = longestWordResults
           .filter((r) => matchedIds.has((r.item as FileRow).id))
           .map((r) => r.item as FileRow);
