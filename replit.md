@@ -48,11 +48,42 @@ Expo (React Native) app at `artifacts/loft-mobile` for Music Savvy musicians to 
 - `@tanstack/react-query` — API state management
 - `react-native-keyboard-controller` — keyboard handling
 
+## Querymindr (File Finder)
+
+Self-contained local search tool for large external drives. React+Vite frontend + Express/Node.js backend. Indexes files into SQLite (node:sqlite). Optional Claude AI. Runs entirely offline.
+
+- **App URL**: `http://localhost:8080/querymindr/`
+- **DB path**: `~/.config/querymindr/querymindr.db`
+- **Install dir**: `~/.querymindr/`
+- **launchd label**: `com.musicsavvy.querymindr` (Mac)
+
+### Release Artifacts (build on Replit, distribute to users)
+
+| File | Platform | Size | How to build |
+|------|----------|------|--------------|
+| `querymindr-mac-release.tar.gz` | macOS | ~35 MB | auto-built by `build-release.sh` / `pnpm run build` |
+| `querymindr-linux_1.0_amd64.deb` | Linux | ~32 MB | `bash build-deb.sh` |
+| `Querymindr-windows-setup.exe` | Windows | ~23 MB | `bash build-exe.sh` |
+
+### Mac build command (for user's machine)
+```
+cd ~/Downloads && tar -xzf querymindr-mac-release.tar.gz && cd querymindr-release && bash build-pkg.sh
+```
+- NEVER give the user `install-querymindr.sh` — always `build-pkg.sh` to get the .pkg installer
+- API key stored in `~/.config/querymindr/querymindr.db` — survives reinstalls
+
+### Windows installer (`build-exe.sh`)
+- NSIS installer built on Replit via `nix-shell -p nsis -p unzip`
+- Installs to `%LOCALAPPDATA%\Querymindr\` (no admin required)
+- Task Scheduler entry for auto-start at login
+- Desktop + Start Menu shortcuts
+- Uninstaller registered in Add/Remove Programs
+- Node.js v22.13.1 Windows x64 binary bundled (~27 MB, cached at `~/.querymindr-build-cache/`)
+
 ## User Preferences
 
-- **Always include the terminal install command** whenever a new release (`querymindr-release.tar.gz`) is packaged. Show both the standard install command and the `.pkg` build command.
-  - Install: `cd ~/Downloads && tar -xzf querymindr-release.tar.gz && cd querymindr-release && bash install-querymindr.sh`
-  - Build pkg: `cd ~/Downloads && tar -xzf querymindr-release.tar.gz && cd querymindr-release && bash build-pkg.sh`
+- **Always include the terminal install command** whenever a new release (`querymindr-mac-release.tar.gz`) is packaged. Show the `.pkg` build command.
+  - Build pkg: `cd ~/Downloads && tar -xzf querymindr-mac-release.tar.gz && cd querymindr-release && bash build-pkg.sh`
 - Non-technical user — always lead with the simplest approach first, avoid jargon.
 
 ## Key Commands
