@@ -42,6 +42,11 @@ db.exec(`
     created_at      TEXT DEFAULT (datetime('now'))
   );
 
+  CREATE TABLE IF NOT EXISTS kv_store (
+    key   TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+  );
+
   CREATE INDEX IF NOT EXISTS idx_file_index_checksum  ON file_index (checksum);
   CREATE INDEX IF NOT EXISTS idx_file_index_name      ON file_index (name);
   CREATE INDEX IF NOT EXISTS idx_file_index_extension ON file_index (extension);
@@ -63,6 +68,15 @@ db.exec(`
       completed_at = datetime('now')
   WHERE status = 'running'
 `);
+
+export function kvGet(key: string): string | null {
+  const row = db.prepare(`SELECT value FROM kv_store WHERE key = ?`).get(key) as { value: string } | undefined;
+  return row?.value ?? null;
+}
+
+export function kvSet(key: string, value: string): void {
+  db.prepare(`INSERT INTO kv_store (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`).run(key, value);
+}
 
 export interface FileRow {
   id: number;

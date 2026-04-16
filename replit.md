@@ -72,6 +72,18 @@ cd ~/Downloads && tar -xzf querymindr-mac-release.tar.gz && cd querymindr-releas
 - NEVER give the user `install-querymindr.sh` — always `build-pkg.sh` to get the .pkg installer
 - API key stored in `~/.config/querymindr/querymindr.db` — survives reinstalls
 
+### Trial & Licensing System
+- **Trial**: 7 days from first install, tracked in `kv_store` DB table AND `~/.config/querymindr/.trial` file (both must be deleted to reset)
+- **License keys**: `QMDR-XXXX-XXXX-XXXX-XXXX` format — self-validating HMAC-SHA256 offline (no server needed)
+- **Key generator**: `node generate-keys.mjs [count]` — generates N keys for import into WooCommerce Serial Numbers plugin
+- **Activation endpoint**: `POST /api/querymindr/license/activate` — validates and stores key in `kv_store`
+- **Status endpoint**: `GET /api/querymindr/license/status` — returns `{ licensed, daysRemaining, installDate }`
+- **Frontend gate**: `App.tsx` checks status on load → shows `TrialExpiredPage` when `!licensed && daysRemaining === 0`
+- **Sidebar badge**: Shows "X days left in trial" (amber when ≤ 2 days) or "Licensed" (green) in the sidebar
+- **Settings card**: License card at top of Settings page with key entry field
+- **Checkout URLs**: Placeholder `https://musicsavvy.com/checkout/querymindr-{mac,windows,linux}` — update once CartFlows pages are live
+- **Secret**: Embedded in `artifacts/api-server/src/lib/querymindr-license.ts` and `generate-keys.mjs` — keep `generate-keys.mjs` private
+
 ### Windows installer (`build-exe.sh`)
 - NSIS installer built on Replit via `nix-shell -p nsis -p unzip`
 - Installs to `%LOCALAPPDATA%\Querymindr\` (no admin required)
