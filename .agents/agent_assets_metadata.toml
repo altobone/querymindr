@@ -17,3 +17,9 @@ id = "mG_qFX10jV_rPHGDTiMq8"
 uri = "file://querymindr-guide.txt"
 type = "text"
 title = "Querymindr — Installation & Setup Guide"
+
+[[outputs]]
+id = "m0k0qC985ywp1eG9sCJgX"
+uri = "file://querymindr-license-keys-500.txt"
+type = "text"
+title = "Querymindr License Keys (500)"
