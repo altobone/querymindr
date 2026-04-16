@@ -422,7 +422,7 @@ router.get("/querymindr/search", async (req: Request, res: Response) => {
     const sortCol = sort_by === "name" ? "name" : sort_by === "size" ? "size_bytes" : sort_by === "type" ? "extension" : "modified_at";
     const order = sort_order === "asc" ? "ASC" : "DESC";
 
-    let allFiles: FileRow[];
+    let allFiles: FileRow[] = [];
 
     if (query.trim()) {
       const q = query.trim();
@@ -449,14 +449,26 @@ router.get("/querymindr/search", async (req: Request, res: Response) => {
           const bFull = b.name.toLowerCase().includes(q.toLowerCase()) ? 0 : 1;
           return aFull - bFull;
         });
-      } else if (q.length >= 5) {
-        // Stage 2: tight fuzzy fallback — only fires when zero exact matches
-        // AND query is long enough that near-misses are meaningful.
-        // Threshold 0.2 catches 1-character typos in long words ("trambones" →
-        // "trombones") but rejects loose matches on short words ("hose" → "home").
+      } else if (q.length >= 3) {
+        // Stage 2: per-word fuzzy fallback — only fires when zero exact matches.
+        // Each word is matched independently then intersected, so a 1-char typo
+        // in one word ("trombonesw" → "trombones") doesn't kill the whole query.
+        // Threshold 0.35 is generous enough for common typos on short words too.
         const base = db.prepare(`SELECT * FROM file_index ${where} ORDER BY ${sortCol} ${order}`).all(...params) as FileRow[];
-        const fuse = new Fuse(base, { keys: ["name"], threshold: 0.2, includeScore: true });
-        allFiles = fuse.search(q).map((r) => r.item);
+        const fuse = new Fuse(base, { keys: ["name"], threshold: 0.35, includeScore: true, ignoreLocation: true });
+
+        // Match each word separately; keep only files that match ALL words
+        const wordSets = words.map((w) => {
+          const hits = fuse.search(w);
+          return new Set(hits.map((r) => (r.item as FileRow).id));
+        });
+        const matchedIds = wordSets.reduce((acc, set) => new Set([...acc].filter((id) => set.has(id))));
+
+        // Preserve score ordering from the first (longest) word's results
+        const longestWordResults = fuse.search(words.reduce((a, b) => (a.length >= b.length ? a : b)));
+        allFiles = longestWordResults
+          .filter((r) => matchedIds.has((r.item as FileRow).id))
+          .map((r) => r.item as FileRow);
       }
     } else {
       allFiles = db.prepare(`SELECT * FROM file_index ${where} ORDER BY ${sortCol} ${order}`).all(...params) as FileRow[];
