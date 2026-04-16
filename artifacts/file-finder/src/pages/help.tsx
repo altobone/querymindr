@@ -26,7 +26,7 @@ interface FeatureCardProps {
 function FeatureCard({ icon, title, description, requiresKey }: FeatureCardProps) {
   return (
     <div className="bg-card border border-border rounded-lg p-5 flex flex-col gap-3">
-      <div className="text-primary">{icon}</div>
+      <div style={{ color: "#e8ff47" }}>{icon}</div>
       <div>
         <div className="flex items-center gap-2 mb-1.5">
           <h3 className="font-semibold text-foreground text-sm">{title}</h3>
@@ -64,7 +64,7 @@ export default function HelpPage() {
     <div className="flex flex-col h-full overflow-hidden">
       <div className="px-8 py-6 border-b border-border flex-shrink-0">
         <div className="flex items-center gap-3">
-          <BookOpen className="w-5 h-5 text-primary" />
+          <BookOpen className="w-5 h-5" style={{ color: "#e8ff47" }} />
           <div>
             <h1 className="text-lg font-semibold" style={{ color: "#e8ff47" }}>Help & Guide</h1>
             <p className="text-sm text-muted-foreground">Everything you need to know about Querymindr.</p>
@@ -158,7 +158,7 @@ export default function HelpPage() {
                     <span className="text-primary font-bold text-xs">1</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <HardDrive className="w-4 h-4 text-primary" />
+                    <HardDrive className="w-4 h-4" style={{ color: "#e8ff47" }} />
                     <h3 className="font-semibold text-foreground text-sm">Add Your Drive</h3>
                   </div>
                 </div>
@@ -173,7 +173,7 @@ export default function HelpPage() {
                     <span className="text-primary font-bold text-xs">2</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <RefreshCw className="w-4 h-4 text-primary" />
+                    <RefreshCw className="w-4 h-4" style={{ color: "#e8ff47" }} />
                     <h3 className="font-semibold text-foreground text-sm">Build the Index</h3>
                   </div>
                 </div>
@@ -189,7 +189,7 @@ export default function HelpPage() {
                     <span className="text-primary font-bold text-xs">3</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Search className="w-4 h-4 text-primary" />
+                    <Search className="w-4 h-4" style={{ color: "#e8ff47" }} />
                     <h3 className="font-semibold text-foreground text-sm">Search</h3>
                   </div>
                 </div>
@@ -205,7 +205,7 @@ export default function HelpPage() {
                     <span className="text-primary font-bold text-xs">4</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-primary" />
+                    <Sparkles className="w-4 h-4" style={{ color: "#e8ff47" }} />
                     <h3 className="font-semibold text-foreground text-sm">Enable AI (Optional)</h3>
                   </div>
                 </div>
@@ -235,7 +235,7 @@ export default function HelpPage() {
 
               <div className="bg-card border border-border rounded-lg p-5">
                 <div className="flex items-start gap-3">
-                  <Fingerprint className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                  <Fingerprint className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: "#e8ff47" }} />
                   <div>
                     <h3 className="font-semibold text-foreground text-sm mb-1.5">How it works</h3>
                     <p className="text-sm text-muted-foreground leading-relaxed">
@@ -250,7 +250,7 @@ export default function HelpPage() {
 
               <div className="bg-card border border-border rounded-lg p-5">
                 <div className="flex items-start gap-3">
-                  <Search className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                  <Search className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: "#e8ff47" }} />
                   <div>
                     <h3 className="font-semibold text-foreground text-sm mb-1.5">Running a scan</h3>
                     <p className="text-sm text-muted-foreground leading-relaxed">
@@ -265,7 +265,7 @@ export default function HelpPage() {
 
               <div className="bg-card border border-border rounded-lg p-5">
                 <div className="flex items-start gap-3">
-                  <Trash2 className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                  <Trash2 className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: "#e8ff47" }} />
                   <div>
                     <h3 className="font-semibold text-foreground text-sm mb-1.5">Removing duplicates</h3>
                     <p className="text-sm text-muted-foreground leading-relaxed">
@@ -325,7 +325,7 @@ export default function HelpPage() {
             <h2 className="text-xl font-bold text-foreground mb-5">Opening Querymindr</h2>
             <div className="bg-card border border-border rounded-lg p-5">
               <div className="flex items-start gap-3">
-                <Zap className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                <Zap className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: "#e8ff47" }} />
                 <div className="space-y-2 text-sm text-muted-foreground leading-relaxed">
                   <p>
                     Querymindr runs automatically in the background whenever your Mac is on.

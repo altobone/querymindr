@@ -244,7 +244,7 @@ export default function SettingsPage() {
                 <CardTitle className="flex items-center gap-2 text-lg">
                   {licenseStatus.licensed
                     ? <ShieldCheck className="w-5 h-5 text-green-400" />
-                    : <KeyRound className="w-5 h-5 text-indigo-400" />}
+                    : <KeyRound className="w-5 h-5" style={{ color: "#e8ff47" }} />}
                   {licenseStatus.licensed ? "Licensed" : "Trial Version"}
                 </CardTitle>
                 <CardDescription>
@@ -310,7 +310,7 @@ export default function SettingsPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg">
-                <KeyRound className="w-5 h-5 text-primary" />
+                <KeyRound className="w-5 h-5" style={{ color: "#e8ff47" }} />
                 Anthropic API Key
                 {apiKeyStatus === "configured" && <Badge variant="secondary" className="ml-2 text-green-400 border-green-600">Configured</Badge>}
                 {apiKeyStatus === "missing" && <Badge variant="secondary" className="ml-2 text-yellow-400 border-yellow-600">Not set</Badge>}
@@ -361,7 +361,7 @@ export default function SettingsPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg">
-                <Cpu className="w-5 h-5 text-primary" />
+                <Cpu className="w-5 h-5" style={{ color: "#e8ff47" }} />
                 AI Model
               </CardTitle>
               <CardDescription>
@@ -392,7 +392,7 @@ export default function SettingsPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg">
-                <Clock className="w-5 h-5 text-primary" />
+                <Clock className="w-5 h-5" style={{ color: "#e8ff47" }} />
                 Auto-Update Schedule
               </CardTitle>
               <CardDescription>
@@ -419,7 +419,7 @@ export default function SettingsPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg">
-                <Database className="w-5 h-5 text-primary" />
+                <Database className="w-5 h-5" style={{ color: "#e8ff47" }} />
                 Checksum File Size Limit
               </CardTitle>
               <CardDescription>
@@ -446,7 +446,7 @@ export default function SettingsPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg">
-                <Activity className="w-5 h-5 text-primary" />
+                <Activity className="w-5 h-5" style={{ color: "#e8ff47" }} />
                 Index Engine
               </CardTitle>
               <CardDescription>
