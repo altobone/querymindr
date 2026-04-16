@@ -415,6 +415,14 @@ export default function SearchPage() {
               </div>
             )}
 
+            {/* Fuzzy match banner */}
+            {!isLoading && !isAiSearch && (searchResults as { fuzzy?: boolean })?.fuzzy && files.length > 0 && (
+              <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-muted/50 border border-border text-xs text-muted-foreground">
+                <Search className="w-3.5 h-3.5 shrink-0" />
+                No exact matches — showing approximate results for <span className="font-medium text-foreground mx-1">"{debouncedQuery}"</span>
+              </div>
+            )}
+
             {/* File results — always show when a search has been run */}
             {!isLoading && (debouncedQuery.length > 0 || folderScope !== "all") && (
               <div className="space-y-2">
