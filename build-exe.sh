@@ -29,7 +29,7 @@ NODE_VERSION="22.13.1"
 NODE_ARCH="x64"
 NODE_ZIP="node-v${NODE_VERSION}-win-${NODE_ARCH}.zip"
 NODE_URL="https://nodejs.org/dist/v${NODE_VERSION}/${NODE_ZIP}"
-OUTPUT="$SCRIPT_DIR/Querymindr-windows-setup.exe"
+OUTPUT="$SCRIPT_DIR/Querymindr-install-windows.exe"
 STAGING="$SCRIPT_DIR/.exe-staging"
 APP_DIR="$STAGING/app"
 

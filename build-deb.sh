@@ -35,7 +35,7 @@ fi
 
 NODE_TARBALL="node-v${NODE_VERSION}-linux-${NODE_ARCH}.tar.gz"
 NODE_URL="https://nodejs.org/dist/v${NODE_VERSION}/${NODE_TARBALL}"
-OUTPUT="$SCRIPT_DIR/${PKG_NAME}_${PKG_VERSION}_${DEB_ARCH}.deb"
+OUTPUT="$SCRIPT_DIR/Querymindr-install-linux.deb"
 STAGING="$SCRIPT_DIR/.deb-staging"
 
 echo ""
