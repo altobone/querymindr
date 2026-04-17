@@ -22,13 +22,12 @@ const PLATFORM_INFO: Record<"mac" | "windows" | "linux", { label: string; url: s
 const STORAGE_KEY = "querymindr-reminder-last-day";
 
 export function shouldShowReminder(daysRemaining: number): boolean {
-  if (daysRemaining <= 0 || daysRemaining > 5) return false;
-  const lastDay = localStorage.getItem(STORAGE_KEY);
-  return lastDay !== String(daysRemaining);
+  if (daysRemaining !== 5) return false;
+  return localStorage.getItem(STORAGE_KEY) !== "shown";
 }
 
-export function dismissReminder(daysRemaining: number) {
-  localStorage.setItem(STORAGE_KEY, String(daysRemaining));
+export function dismissReminder() {
+  localStorage.setItem(STORAGE_KEY, "shown");
 }
 
 interface Props {
@@ -45,16 +44,11 @@ export default function TrialReminderModal({ daysRemaining, onDismiss }: Props) 
     window.open(url, "_blank");
   };
 
-  const urgent = daysRemaining <= 2;
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}>
       <div
         className="relative w-full max-w-sm rounded-xl p-6 shadow-2xl"
-        style={{
-          background: "#111",
-          border: urgent ? "1px solid rgba(232,255,71,0.5)" : "1px solid rgba(232,255,71,0.2)",
-        }}
+        style={{ background: "#111", border: "1px solid rgba(232,255,71,0.3)" }}
       >
         {/* Dismiss X */}
         <button
@@ -77,9 +71,7 @@ export default function TrialReminderModal({ daysRemaining, onDismiss }: Props) 
             <p className="font-semibold text-white text-sm">
               {daysRemaining === 1 ? "1 day left in your trial" : `${daysRemaining} days left in your trial`}
             </p>
-            <p className="text-xs text-gray-400 mt-0.5">
-              {urgent ? "Your trial ends very soon." : "Your 7-day trial is almost up."}
-            </p>
+            <p className="text-xs text-gray-400 mt-0.5">Your 7-day trial is almost up.</p>
           </div>
         </div>
 

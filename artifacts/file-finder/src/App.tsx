@@ -73,7 +73,7 @@ function App() {
   }, []);
 
   const handleDismissReminder = () => {
-    if (licenseStatus) dismissReminder(licenseStatus.daysRemaining);
+    dismissReminder();
     setShowReminder(false);
   };
 
