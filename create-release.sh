@@ -19,6 +19,12 @@ echo ""
 
 cd "$SCRIPT_DIR"
 
+echo "0/4  Removing prior installer files..."
+rm -f "$SCRIPT_DIR"/Querymindr-install-windows*.exe \
+      "$SCRIPT_DIR"/Querymindr-install-linux*.deb \
+      "$SCRIPT_DIR"/querymindr-release*.tar.gz
+echo "     Done."
+
 echo "1/4  Building frontend..."
 NODE_ENV=production BASE_PATH=/querymindr/ pnpm --filter @workspace/file-finder run build
 echo "     Done."
