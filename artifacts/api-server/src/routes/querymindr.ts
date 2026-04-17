@@ -463,12 +463,25 @@ router.get("/querymindr/search", async (req: Request, res: Response) => {
         // Fallback: if the SQL pre-filter finds nothing (very short words or exotic typos)
         // we fall back to a hard-capped full-table scan so the query always completes.
 
-        const FUZZY_CAP = 20_000; // never feed Fuse more than this many rows
+        const FUZZY_CAP = 50_000; // never feed Fuse more than this many rows
 
-        // Build OR clauses using the interior of each word for SQL pre-filtering
-        const cores = words.map((w) => (w.length >= 5 ? w.slice(1, -1) : w));
-        const orClauses = cores.map(() => "LOWER(name) LIKE LOWER(?)").join(" OR ");
-        const orParams = cores.map((c) => `%${c}%`);
+        // Build OR clauses using overlapping n-grams for SQL pre-filtering.
+        // Using a single core substring (old approach) fails for interior typos because
+        // the core itself contains the typo. N-grams solve this: for a word of length N
+        // with 1 typo, at least (N - gramSize) grams are correct and will match via LIKE.
+        // E.g. "documant" (typo of "document") → 4-grams: "docu","ocum","cuma","uman","mant"
+        // → "docu" and "ocum" are valid substrings of "document", so SQL finds it.
+        const getGrams = (word: string): string[] => {
+          const n = word.length >= 8 ? 4 : word.length >= 5 ? 3 : word.length;
+          if (word.length <= n) return [word];
+          const grams: string[] = [];
+          for (let i = 0; i <= word.length - n; i++) grams.push(word.slice(i, i + n));
+          return grams;
+        };
+
+        const allGrams = [...new Set(words.flatMap(getGrams))];
+        const orClauses = allGrams.map(() => "LOWER(name) LIKE LOWER(?)").join(" OR ");
+        const orParams = allGrams.map((g) => `%${g}%`);
 
         const preFilterWhere = conditions.length > 0
           ? `WHERE ${conditions.join(" AND ")} AND (${orClauses})`
@@ -485,7 +498,7 @@ router.get("/querymindr/search", async (req: Request, res: Response) => {
             .all(...params) as FileRow[];
         }
 
-        const fuse = new Fuse(candidates, { keys: ["name"], threshold: 0.35, includeScore: true, ignoreLocation: true });
+        const fuse = new Fuse(candidates, { keys: ["name"], threshold: 0.4, includeScore: true, ignoreLocation: true });
 
         // Match each word separately; keep only files that match ALL words
         const wordSets = words.map((w) => {
