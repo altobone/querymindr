@@ -1,0 +1,112 @@
+import { X, ShoppingCart, Clock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+
+const CHECKOUT_URL_MAC     = "https://musicsavvy.com/?add-to-cart=54669";
+const CHECKOUT_URL_WINDOWS = "https://musicsavvy.com/?add-to-cart=54663";
+const CHECKOUT_URL_LINUX   = "https://musicsavvy.com/?add-to-cart=54668";
+
+function detectPlatform(): "mac" | "windows" | "linux" {
+  const p = navigator.platform?.toLowerCase() ?? "";
+  const ua = navigator.userAgent?.toLowerCase() ?? "";
+  if (p.includes("win") || ua.includes("windows")) return "windows";
+  if (p.includes("linux") || ua.includes("linux")) return "linux";
+  return "mac";
+}
+
+const PLATFORM_INFO: Record<"mac" | "windows" | "linux", { label: string; url: string }> = {
+  mac:     { label: "Buy for Mac — $29",     url: CHECKOUT_URL_MAC },
+  windows: { label: "Buy for Windows — $29", url: CHECKOUT_URL_WINDOWS },
+  linux:   { label: "Buy for Linux — $29",   url: CHECKOUT_URL_LINUX },
+};
+
+const STORAGE_KEY = "querymindr-reminder-last-day";
+
+export function shouldShowReminder(daysRemaining: number): boolean {
+  if (daysRemaining <= 0 || daysRemaining > 5) return false;
+  const lastDay = localStorage.getItem(STORAGE_KEY);
+  return lastDay !== String(daysRemaining);
+}
+
+export function dismissReminder(daysRemaining: number) {
+  localStorage.setItem(STORAGE_KEY, String(daysRemaining));
+}
+
+interface Props {
+  daysRemaining: number;
+  onDismiss: () => void;
+}
+
+export default function TrialReminderModal({ daysRemaining, onDismiss }: Props) {
+  const platform = detectPlatform();
+  const { label, url } = PLATFORM_INFO[platform];
+
+  const handleBuy = () => {
+    onDismiss();
+    window.open(url, "_blank");
+  };
+
+  const urgent = daysRemaining <= 2;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}>
+      <div
+        className="relative w-full max-w-sm rounded-xl p-6 shadow-2xl"
+        style={{
+          background: "#111",
+          border: urgent ? "1px solid rgba(232,255,71,0.5)" : "1px solid rgba(232,255,71,0.2)",
+        }}
+      >
+        {/* Dismiss X */}
+        <button
+          onClick={onDismiss}
+          className="absolute top-4 right-4 text-gray-500 hover:text-gray-300 transition-colors"
+          aria-label="Dismiss"
+        >
+          <X className="w-4 h-4" />
+        </button>
+
+        {/* Icon + heading */}
+        <div className="flex items-center gap-3 mb-4">
+          <div
+            className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
+            style={{ background: "rgba(232,255,71,0.1)", border: "1px solid rgba(232,255,71,0.25)" }}
+          >
+            <Clock className="w-5 h-5" style={{ color: "#e8ff47" }} />
+          </div>
+          <div>
+            <p className="font-semibold text-white text-sm">
+              {daysRemaining === 1 ? "1 day left in your trial" : `${daysRemaining} days left in your trial`}
+            </p>
+            <p className="text-xs text-gray-400 mt-0.5">
+              {urgent ? "Your trial ends very soon." : "Your 7-day trial is almost up."}
+            </p>
+          </div>
+        </div>
+
+        <p className="text-sm text-gray-400 mb-5 leading-relaxed">
+          Keep Querymindr after your trial — one-time payment, no subscription, yours forever.
+        </p>
+
+        <div className="space-y-2">
+          <Button
+            className="w-full font-medium"
+            style={{ background: "#e8ff47", color: "#0d0d0d" }}
+            onMouseEnter={e => (e.currentTarget.style.background = "#d4eb3a")}
+            onMouseLeave={e => (e.currentTarget.style.background = "#e8ff47")}
+            onClick={handleBuy}
+          >
+            <ShoppingCart className="w-4 h-4 mr-2" />
+            {label}
+          </Button>
+          <Button
+            variant="ghost"
+            className="w-full text-gray-500 hover:text-gray-300 text-sm"
+            onClick={onDismiss}
+          >
+            Remind me tomorrow
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}

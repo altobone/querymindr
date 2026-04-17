@@ -4,12 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-// ---------------------------------------------------------------------------
-// Update these URLs once your CartFlows checkout pages are live.
-// ---------------------------------------------------------------------------
-const CHECKOUT_URL_MAC     = "https://musicsavvy.com/checkout/querymindr-mac";
-const CHECKOUT_URL_WINDOWS = "https://musicsavvy.com/checkout/querymindr-windows";
-const CHECKOUT_URL_LINUX   = "https://musicsavvy.com/checkout/querymindr-linux";
+const CHECKOUT_URL_MAC     = "https://musicsavvy.com/?add-to-cart=54669";
+const CHECKOUT_URL_WINDOWS = "https://musicsavvy.com/?add-to-cart=54663";
+const CHECKOUT_URL_LINUX   = "https://musicsavvy.com/?add-to-cart=54668";
 
 function detectPlatform(): "mac" | "windows" | "linux" {
   const p = navigator.platform?.toLowerCase() ?? "";

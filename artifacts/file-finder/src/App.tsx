@@ -11,6 +11,7 @@ import SettingsPage from "@/pages/settings";
 import HelpPage from "@/pages/help";
 import WelcomeScreen, { hasSeenWelcome } from "@/pages/welcome";
 import TrialExpiredPage from "@/pages/trial-expired";
+import TrialReminderModal, { shouldShowReminder, dismissReminder } from "@/components/trial-reminder-modal";
 
 const queryClient = new QueryClient();
 
@@ -49,20 +50,32 @@ function Router({ licenseStatus, onActivated }: { licenseStatus: LicenseStatus |
 
 function App() {
   const [licenseStatus, setLicenseStatus] = useState<LicenseStatus | null>(null);
+  const [showReminder, setShowReminder] = useState(false);
 
   const fetchLicense = () => {
     fetch("/api/querymindr/license/status")
       .then(r => r.json())
-      .then(d => setLicenseStatus(d as LicenseStatus))
+      .then(d => {
+        const status = d as LicenseStatus;
+        setLicenseStatus(status);
+        const previewReminder = new URLSearchParams(window.location.search).get("preview") === "reminder";
+        if (!status.licensed && (previewReminder || shouldShowReminder(status.daysRemaining))) {
+          setShowReminder(true);
+        }
+      })
       .catch(() => {});
   };
 
   useEffect(() => {
     fetchLicense();
-    // Re-check once per hour in case trial expires mid-session
     const interval = setInterval(fetchLicense, 60 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
+
+  const handleDismissReminder = () => {
+    if (licenseStatus) dismissReminder(licenseStatus.daysRemaining);
+    setShowReminder(false);
+  };
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -71,6 +84,12 @@ function App() {
           <Router licenseStatus={licenseStatus} onActivated={fetchLicense} />
         </WouterRouter>
         <Toaster />
+        {showReminder && licenseStatus && (
+          <TrialReminderModal
+            daysRemaining={licenseStatus.daysRemaining}
+            onDismiss={handleDismissReminder}
+          />
+        )}
       </TooltipProvider>
     </QueryClientProvider>
   );
