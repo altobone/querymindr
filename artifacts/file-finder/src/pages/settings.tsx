@@ -118,7 +118,8 @@ export default function SettingsPage() {
   };
 
   const handleAddDrive = () => {
-    const trimmed = newDirInput.trim();
+    // Strip surrounding quotes Windows adds when copying a path via right-click
+    const trimmed = newDirInput.trim().replace(/^["']+|["']+$/g, "").trim();
     if (!trimmed || rootDirs.includes(trimmed)) return;
     const updated = [...rootDirs, trimmed];
     setRootDirs(updated);
@@ -194,15 +195,21 @@ export default function SettingsPage() {
     return () => clearInterval(interval);
   }, [isRunning, refetchStatus, refetchStats]);
 
-  const handleStart = () => {
+  const handleStart = async () => {
     if (rootDirs.length === 0) return;
-    startIndex.mutate({ data: {} }, {
-      onSuccess: () => {
-        const label = rootDirs.length === 1 ? rootDirs[0] : `${rootDirs.length} drives`;
-        toast({ title: "Full Re-index Started", description: `Scanning all files in ${label}...` });
-        refetchStatus();
+    try {
+      const res = await fetch("/api/querymindr/index/start", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}) });
+      const data = await res.json();
+      if (!res.ok) {
+        toast({ title: "Cannot Start Indexing", description: data.error ?? "Unknown error.", variant: "destructive", duration: 8000 });
+        return;
       }
-    });
+      const label = rootDirs.length === 1 ? rootDirs[0] : `${rootDirs.length} drives`;
+      toast({ title: "Full Re-index Started", description: `Scanning all files in ${label}...` });
+      refetchStatus();
+    } catch {
+      toast({ title: "Cannot Start Indexing", description: "Could not reach the local server. Is Querymindr running?", variant: "destructive" });
+    }
   };
 
   const handleIncremental = async () => {

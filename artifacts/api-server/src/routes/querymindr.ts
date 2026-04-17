@@ -748,6 +748,16 @@ router.post("/querymindr/index/start", async (req: Request, res: Response) => {
     const rootDirs = getRootDirs();
     const label = rootDirsLabel(rootDirs);
 
+    if (rootDirs.length === 0) {
+      return res.status(400).json({ error: "No folders have been added. Go to Settings and add at least one folder or drive to index." });
+    }
+
+    const missingDirs = rootDirs.filter(d => !fs.existsSync(d));
+    if (missingDirs.length > 0) {
+      const list = missingDirs.map(d => `• ${d}`).join("\n");
+      return res.status(400).json({ error: `The following folder${missingDirs.length > 1 ? "s" : ""} could not be found — make sure the drive is connected and the path is correct:\n${list}` });
+    }
+
     if (isIndexingRunning) {
       const job = db.prepare("SELECT * FROM indexing_jobs ORDER BY id DESC LIMIT 1").get() as JobRow | undefined;
       return res.json({ status: "running", root_dir: job?.root_dir ?? label, total_files: job?.total_files ?? 0, processed_files: job?.processed_files ?? 0, started_at: job?.started_at ?? null, completed_at: null, error_message: null });
