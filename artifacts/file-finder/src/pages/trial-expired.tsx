@@ -4,9 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-const CHECKOUT_URL_MAC     = "https://musicsavvy.com/checkout/querymindr-for-mac/step/querymindr-for-mac";
-const CHECKOUT_URL_WINDOWS = "https://musicsavvy.com/checkout/querymindr-for-windows/step/querymindr-for-windows";
-const CHECKOUT_URL_LINUX   = "https://musicsavvy.com/checkout/querymindr-for-linux/step/querymindr-for-linux";
+const CHECKOUT_URL_MAC     = "https://musicsavvy.com/querymindr-for-mac-checkout";
+const CHECKOUT_URL_WINDOWS = "https://musicsavvy.com/querymindr-for-windows-checkout";
+const CHECKOUT_URL_LINUX   = "https://musicsavvy.com/querymindr-for-linux-checkout";
 
 function detectPlatform(): "mac" | "windows" | "linux" {
   const p = navigator.platform?.toLowerCase() ?? "";
