@@ -84,9 +84,9 @@ function App() {
           <Router licenseStatus={licenseStatus} onActivated={fetchLicense} />
         </WouterRouter>
         <Toaster />
-        {showReminder && licenseStatus && (
+        {showReminder && (
           <TrialReminderModal
-            daysRemaining={licenseStatus.daysRemaining}
+            daysRemaining={previewReminder ? 2 : (licenseStatus?.daysRemaining ?? 2)}
             onDismiss={handleDismissReminder}
           />
         )}
