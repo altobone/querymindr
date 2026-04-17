@@ -50,7 +50,8 @@ function Router({ licenseStatus, onActivated }: { licenseStatus: LicenseStatus |
 
 function App() {
   const [licenseStatus, setLicenseStatus] = useState<LicenseStatus | null>(null);
-  const [showReminder, setShowReminder] = useState(false);
+  const previewReminder = new URLSearchParams(window.location.search).get("preview") === "reminder";
+  const [showReminder, setShowReminder] = useState(previewReminder);
 
   const fetchLicense = () => {
     fetch("/api/querymindr/license/status")
@@ -58,8 +59,7 @@ function App() {
       .then(d => {
         const status = d as LicenseStatus;
         setLicenseStatus(status);
-        const previewReminder = new URLSearchParams(window.location.search).get("preview") === "reminder";
-        if (!status.licensed && (previewReminder || shouldShowReminder(status.daysRemaining))) {
+        if (!status.licensed && shouldShowReminder(status.daysRemaining)) {
           setShowReminder(true);
         }
       })
