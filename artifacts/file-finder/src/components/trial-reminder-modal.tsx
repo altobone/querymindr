@@ -22,7 +22,7 @@ const PLATFORM_INFO: Record<"mac" | "windows" | "linux", { label: string; url: s
 const STORAGE_KEY = "querymindr-reminder-last-day";
 
 export function shouldShowReminder(daysRemaining: number): boolean {
-  if (daysRemaining !== 5) return false;
+  if (daysRemaining !== 2) return false;
   return localStorage.getItem(STORAGE_KEY) !== "shown";
 }
 
