@@ -1,9 +1,9 @@
 import { X, ShoppingCart, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-const CHECKOUT_URL_MAC     = "https://musicsavvy.com/?add-to-cart=54669";
-const CHECKOUT_URL_WINDOWS = "https://musicsavvy.com/?add-to-cart=54663";
-const CHECKOUT_URL_LINUX   = "https://musicsavvy.com/?add-to-cart=54668";
+const CHECKOUT_URL_MAC     = "https://musicsavvy.com/checkout/querymindr-for-mac/step/querymindr-for-mac";
+const CHECKOUT_URL_WINDOWS = "https://musicsavvy.com/checkout/querymindr-for-windows/step/querymindr-for-windows";
+const CHECKOUT_URL_LINUX   = "https://musicsavvy.com/checkout/querymindr-for-linux/step/querymindr-for-linux";
 
 function detectPlatform(): "mac" | "windows" | "linux" {
   const p = navigator.platform?.toLowerCase() ?? "";
