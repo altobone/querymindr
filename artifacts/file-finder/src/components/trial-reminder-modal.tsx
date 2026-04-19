@@ -3,20 +3,17 @@ import { Button } from "@/components/ui/button";
 
 const CHECKOUT_URL_MAC     = "https://musicsavvy.com/querymindr-for-mac-checkout";
 const CHECKOUT_URL_WINDOWS = "https://musicsavvy.com/querymindr-for-windows-checkout";
-const CHECKOUT_URL_LINUX   = "https://musicsavvy.com/querymindr-for-linux-checkout";
 
-function detectPlatform(): "mac" | "windows" | "linux" {
+function detectPlatform(): "mac" | "windows" {
   const p = navigator.platform?.toLowerCase() ?? "";
   const ua = navigator.userAgent?.toLowerCase() ?? "";
   if (p.includes("win") || ua.includes("windows")) return "windows";
-  if (p.includes("linux") || ua.includes("linux")) return "linux";
   return "mac";
 }
 
-const PLATFORM_INFO: Record<"mac" | "windows" | "linux", { label: string; url: string }> = {
+const PLATFORM_INFO: Record<"mac" | "windows", { label: string; url: string }> = {
   mac:     { label: "Buy for Mac — $29",     url: CHECKOUT_URL_MAC },
   windows: { label: "Buy for Windows — $29", url: CHECKOUT_URL_WINDOWS },
-  linux:   { label: "Buy for Linux — $29",   url: CHECKOUT_URL_LINUX },
 };
 
 const STORAGE_KEY = "querymindr-reminder-last-day";
