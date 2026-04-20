@@ -50,20 +50,26 @@ Expo (React Native) app at `artifacts/loft-mobile` for Music Savvy musicians to 
 
 ## Querymindr (File Finder)
 
-Self-contained local search tool for large external drives. React+Vite frontend + Express/Node.js backend. Indexes files into SQLite (node:sqlite). Optional Claude AI. Runs entirely offline.
+Self-contained local search tool for large external drives. React+Vite frontend + Express/Node.js backend. Indexes files into SQLite (node:sqlite). Fuzzy search is the core product — AI features removed. Runs entirely offline. Mac + Windows only.
 
 - **App URL**: `http://localhost:8080/querymindr/`
 - **DB path**: `~/.config/querymindr/querymindr.db`
 - **Install dir**: `~/.querymindr/`
 - **launchd label**: `com.musicsavvy.querymindr` (Mac)
 
+### Search Features
+- **Exact match**: all query words must appear in filename (case-insensitive, substring)
+- **Fuzzy fallback**: n-gram SQL pre-filter + Fuse.js; fires only when zero exact matches
+- **Type synonyms**: natural-language words in query auto-expand to extension filters (e.g. "photos" → jpg/png/heic, "videos" → mp4/mov, "stems" → wav/aif)
+- **More Like This**: pure fuzzy (Fuse.js) similarity by filename — no AI dependency
+- **Folder search**: parallel folder-name search with Browse + Reveal in Finder
+
 ### Release Artifacts (build on Replit, distribute to users)
 
 | File | Platform | Size | How to build |
 |------|----------|------|--------------|
-| `querymindr-mac-release.tar.gz` | macOS | ~35 MB | auto-built by `build-release.sh` / `pnpm run build` |
-| `querymindr-linux_1.0_amd64.deb` | Linux | ~32 MB | `bash build-deb.sh` |
-| `Querymindr-windows-setup.exe` | Windows | ~23 MB | `bash build-exe.sh` |
+| `querymindr-release.tar.gz` | macOS | ~2.7 MB | `bash create-release.sh` |
+| `Querymindr-install-windows.exe` | Windows | ~23 MB | `bash build-exe.sh` (in `/tmp/qm-build/querymindr-release/`) |
 
 ### Mac build command (for user's machine)
 ```

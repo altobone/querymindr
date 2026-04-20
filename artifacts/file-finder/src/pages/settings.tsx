@@ -5,17 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { HardDrive, Activity, AlertTriangle, CheckCircle2, Cpu, KeyRound, Eye, EyeOff, Zap, RefreshCw, Clock, Database, Plus, X, ShieldCheck, ShoppingCart, Loader2 } from "lucide-react";
+import { HardDrive, Activity, AlertTriangle, CheckCircle2, KeyRound, Eye, EyeOff, Zap, RefreshCw, Clock, Database, Plus, X, ShieldCheck, ShoppingCart, Loader2 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-
-const MODEL_STORAGE_KEY = "querymindr-ai-model";
-const MODEL_OPTIONS = [
-  { value: "claude-haiku-4-5", label: "Claude Haiku", description: "Faster & cheaper — great for most searches" },
-  { value: "claude-sonnet-4-5", label: "Claude Sonnet", description: "More powerful — better for complex queries" },
-];
 
 const SCHEDULE_OPTIONS = [
   { value: "0",  label: "Disabled",      description: "Never auto-update — run manually only" },
@@ -42,11 +36,6 @@ interface LicenseStatus {
 export default function SettingsPage() {
   const [rootDirs, setRootDirs] = useState<string[]>([]);
   const [newDirInput, setNewDirInput] = useState("");
-  const [selectedModel, setSelectedModel] = useState<string>(() => localStorage.getItem(MODEL_STORAGE_KEY) ?? "claude-haiku-4-5");
-  const [apiKey, setApiKey] = useState("");
-  const [showKey, setShowKey] = useState(false);
-  const [apiKeyStatus, setApiKeyStatus] = useState<"unknown" | "configured" | "missing">("unknown");
-  const [savingKey, setSavingKey] = useState(false);
   const [scheduleInterval, setScheduleInterval] = useState("12");
   const [checksumLimit, setChecksumLimit] = useState("100");
   const { toast } = useToast();
@@ -57,11 +46,6 @@ export default function SettingsPage() {
   const [showLicenseKey, setShowLicenseKey] = useState(false);
 
   useEffect(() => {
-    fetch("/api/querymindr/ai-config")
-      .then((r) => r.json())
-      .then((d: { configured: boolean }) => setApiKeyStatus(d.configured ? "configured" : "missing"))
-      .catch(() => setApiKeyStatus("missing"));
-
     fetch("/api/querymindr/app-config")
       .then((r) => r.json())
       .then((d: { auto_index_interval_hours: number; checksum_limit_mb: number; root_dirs: string[] }) => {
@@ -146,33 +130,6 @@ export default function SettingsPage() {
     setChecksumLimit(value);
     saveAppConfig({ checksum_limit_mb: Number(value) });
     toast({ title: "Checksum Limit Updated", description: `Files up to ${CHECKSUM_OPTIONS.find(o => o.value === value)?.label} will be fingerprinted for duplicate detection.` });
-  };
-
-  const handleSaveApiKey = async () => {
-    setSavingKey(true);
-    try {
-      const res = await fetch("/api/querymindr/ai-config", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ api_key: apiKey }),
-      });
-      const data = await res.json() as { ok: boolean; message: string };
-      if (data.ok) {
-        setApiKeyStatus(apiKey.trim() ? "configured" : "missing");
-        setApiKey("");
-        toast({ title: apiKey.trim() ? "API Key Saved" : "API Key Cleared", description: data.message });
-      }
-    } catch {
-      toast({ title: "Error", description: "Could not save API key.", variant: "destructive" });
-    } finally {
-      setSavingKey(false);
-    }
-  };
-
-  const handleModelChange = (value: string) => {
-    setSelectedModel(value);
-    localStorage.setItem(MODEL_STORAGE_KEY, value);
-    toast({ title: "AI Model Updated", description: `Now using ${MODEL_OPTIONS.find(m => m.value === value)?.label ?? value} for searches.` });
   };
 
   const { data: statusData, refetch: refetchStatus } = useGetIndexStatus();
@@ -313,88 +270,6 @@ export default function SettingsPage() {
               )}
             </Card>
           )}
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <KeyRound className="w-5 h-5" style={{ color: "#e8ff47" }} />
-                Anthropic API Key
-                {apiKeyStatus === "configured" && <Badge variant="secondary" className="ml-2 text-green-400 border-green-600">Configured</Badge>}
-                {apiKeyStatus === "missing" && <Badge variant="secondary" className="ml-2 text-yellow-400 border-yellow-600">Not set</Badge>}
-              </CardTitle>
-              <CardDescription>
-                Required for AI Search, file summaries, and "More Like This". Get your key at <span className="font-mono text-xs">console.anthropic.com</span>. Saved to your Mac and loaded automatically on every restart.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex gap-2 items-center">
-                <div className="relative flex-1">
-                  <Input
-                    type={showKey ? "text" : "password"}
-                    value={apiKey}
-                    onChange={(e) => setApiKey(e.target.value)}
-                    placeholder={apiKeyStatus === "configured" ? "Key is set — paste a new one to replace" : "sk-ant-…"}
-                    className="font-mono text-sm pr-10"
-                    onKeyDown={(e) => e.key === "Enter" && handleSaveApiKey()}
-                  />
-                  <button
-                    type="button"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    onClick={() => setShowKey((v) => !v)}
-                  >
-                    {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-                <Button onClick={handleSaveApiKey} disabled={savingKey || !apiKey.trim()} className="w-24">
-                  {savingKey ? "Saving…" : "Save Key"}
-                </Button>
-                {apiKeyStatus === "configured" && (
-                  <Button variant="ghost" onClick={async () => {
-                    setSavingKey(true);
-                    try {
-                      await fetch("/api/querymindr/ai-config", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ api_key: "" }) });
-                      setApiKeyStatus("missing");
-                      setApiKey("");
-                      toast({ title: "API Key Cleared" });
-                    } finally { setSavingKey(false); }
-                  }} disabled={savingKey} className="text-destructive hover:text-destructive">
-                    Clear
-                  </Button>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Cpu className="w-5 h-5" style={{ color: "#e8ff47" }} />
-                AI Model
-              </CardTitle>
-              <CardDescription>
-                Choose which Claude model powers AI search, summaries, and similar-file detection.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <Select value={selectedModel} onValueChange={handleModelChange}>
-                  <SelectTrigger className="w-64">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {MODEL_OPTIONS.map((m) => (
-                      <SelectItem key={m.value} value={m.value}>
-                        {m.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-sm text-muted-foreground">
-                  {MODEL_OPTIONS.find(m => m.value === selectedModel)?.description}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
 
           <Card>
             <CardHeader>
