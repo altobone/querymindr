@@ -590,17 +590,21 @@ router.post("/querymindr/ai-search", async (req: Request, res: Response) => {
     const response = await client.messages.create({
       model: resolveModel(model),
       max_tokens: 1024,
-      messages: [{ role: "user", content: `You are a file search assistant. The user is looking for: "${description}"\n\nFile list (ID | name | extension | folder | summary):\n${fileList}\n\nReturn a JSON object with:\n- "ids": array of up to 20 matching file IDs, ordered by relevance\n- "explanation": one-sentence explanation of what you found\n\nCRITICAL: respond with raw JSON only. No markdown, no code fences, no commentary — just the JSON object.` }],
+      messages: [{ role: "user", content: `You are a file search assistant. The user is looking for: "${description}"\n\nFile list (ID | name | extension | folder | summary):\n${fileList}\n\nReturn ONLY a raw JSON object in exactly this shape:\n{"ids":[42,17,8],"explanation":"One sentence describing what you found."}\n\nRules:\n- "ids" must be an array of integer IDs taken exactly from the ID numbers in the file list above\n- Include up to 20 IDs, ordered best match first\n- If nothing matches, use an empty array: {"ids":[],"explanation":"No matching files found."}\n- No markdown, no code fences, no extra text — raw JSON only.` }],
     });
 
     const raw = response.content[0].type === "text" ? response.content[0].text : "{}";
     const text = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
-    let parsed: { ids?: number[]; explanation?: string } = {};
+    let parsed: { ids?: unknown[]; explanation?: string } = {};
     try { parsed = JSON.parse(text); } catch { parsed = { ids: [], explanation: "Could not parse AI response." }; }
 
-    const matchedIds = parsed.ids ?? [];
+    // Coerce IDs to integers — Claude sometimes returns strings or floats
+    const matchedIds: number[] = (parsed.ids ?? [])
+      .map((v) => parseInt(String(v), 10))
+      .filter((n) => !isNaN(n));
     const matchedFiles = matchedIds.length > 0 ? (db.prepare(`SELECT * FROM file_index WHERE id IN (${matchedIds.map(() => "?").join(",")})`).all(...matchedIds) as FileRow[]) : [];
-    const sortedFiles = matchedIds.map((id) => matchedFiles.find((f) => f.id === id)).filter(Boolean) as FileRow[];
+    // Use loose equality (==) so string "42" matches integer 42
+    const sortedFiles = matchedIds.map((id) => matchedFiles.find((f) => f.id == id)).filter(Boolean) as FileRow[];
 
     res.json({ files: sortedFiles.map(formatFileResult), explanation: parsed.explanation ?? "", total: sortedFiles.length });
   } catch (err: unknown) {
