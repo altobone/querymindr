@@ -1,6 +1,6 @@
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Database, Search, Sparkles, ArrowRight, X } from "lucide-react";
+import { Database, Search, ArrowRight, X } from "lucide-react";
 import logo from "@assets/Queryminder-logo_white_1776223766599.png";
 
 const WELCOME_KEY = "querymindr_welcomed";
@@ -73,20 +73,6 @@ export default function WelcomeScreen({ onDismiss }: WelcomeScreenProps) {
             </div>
           </div>
 
-          <div className="flex gap-4 items-start p-4 rounded-lg border border-border/30 bg-transparent">
-            <div className="w-8 h-8 rounded-md bg-muted/30 border border-border/50 flex items-center justify-center flex-shrink-0 mt-0.5">
-              <Sparkles className="w-4 h-4 text-muted-foreground" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-foreground mb-1">
-                Optional — Enable AI features
-                <span className="ml-2 text-xs font-normal text-muted-foreground">(Claude API key required)</span>
-              </p>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                Add a Claude API key in <span className="text-foreground font-medium">Settings → Claude API Key</span> to unlock AI Magic Search and AI File Summaries. The app works fully without it.
-              </p>
-            </div>
-          </div>
         </div>
 
         {/* Actions */}

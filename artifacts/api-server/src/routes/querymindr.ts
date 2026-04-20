@@ -5,7 +5,6 @@ import * as fs from "fs";
 import * as path from "path";
 import * as crypto from "crypto";
 import * as os from "os";
-import Anthropic from "@anthropic-ai/sdk";
 import fg from "fast-glob";
 import Fuse from "fuse.js";
 import mime from "mime-types";
@@ -16,14 +15,11 @@ const router: IRouter = Router();
 const execAsync = promisify(exec);
 
 const ROOT_DIR = process.env.ROOT_DIR || process.cwd();
-const VALID_MODELS = ["claude-haiku-4-5", "claude-sonnet-4-5"];
-const DEFAULT_MODEL = "claude-haiku-4-5";
 
 const CONFIG_DIR = path.join(os.homedir(), ".config", "querymindr");
 const CONFIG_FILE = path.join(CONFIG_DIR, "config.json");
 
 interface AppConfig {
-  api_key?: string;
   auto_index_interval_hours?: number;
   checksum_limit_mb?: number;
   root_dirs?: string[];
@@ -53,23 +49,7 @@ function writeConfigFile(data: AppConfig): void {
   } catch { }
 }
 
-let runtimeApiKey: string | null = readConfigFile().api_key ?? null;
 let isIndexingRunning = false;
-
-function getActiveApiKey(): string | null {
-  return runtimeApiKey || process.env.ANTHROPIC_API_KEY || null;
-}
-
-function getAnthropicClient() {
-  const key = getActiveApiKey();
-  if (!key) return null;
-  return new Anthropic({ apiKey: key });
-}
-
-function resolveModel(requested?: string | null): string {
-  if (requested && VALID_MODELS.includes(requested)) return requested;
-  return DEFAULT_MODEL;
-}
 
 function formatFileResult(f: FileRow) {
   return {
@@ -365,25 +345,6 @@ async function runIncrementalIndexing(rootDirs: string[], jobId: number) {
   }
 }
 
-router.get("/querymindr/ai-config", (_req: Request, res: Response) => {
-  const envKeySet = !!process.env.ANTHROPIC_API_KEY;
-  const runtimeKeySet = !!runtimeApiKey;
-  res.json({ configured: envKeySet || runtimeKeySet, source: runtimeKeySet ? "runtime" : (envKeySet ? "env" : "none") });
-});
-
-router.post("/querymindr/ai-config", (req: Request, res: Response) => {
-  const { api_key } = req.body as { api_key?: string };
-  if (api_key && api_key.trim()) {
-    runtimeApiKey = api_key.trim();
-    writeConfigFile({ api_key: runtimeApiKey });
-    res.json({ ok: true, message: "API key saved." });
-  } else {
-    runtimeApiKey = null;
-    writeConfigFile({});
-    res.json({ ok: true, message: "API key cleared." });
-  }
-});
-
 router.get("/querymindr/search", async (req: Request, res: Response) => {
   try {
     const {
@@ -404,11 +365,60 @@ router.get("/querymindr/search", async (req: Request, res: Response) => {
     const limitNum = Math.min(200, Math.max(1, parseInt(limit)));
     const offset = (pageNum - 1) * limitNum;
 
+    // Type synonym map — translates natural-language words in the query into extension filters
+    const TYPE_SYNONYMS: Record<string, string[]> = {
+      photo: [".jpg",".jpeg",".png",".heic",".heif",".gif",".webp",".tiff",".tif",".bmp",".raw",".cr2",".nef",".arw"],
+      photos: [".jpg",".jpeg",".png",".heic",".heif",".gif",".webp",".tiff",".tif",".bmp",".raw",".cr2",".nef",".arw"],
+      picture: [".jpg",".jpeg",".png",".heic",".heif",".gif",".webp",".tiff",".tif",".bmp",".raw",".cr2",".nef",".arw"],
+      pictures: [".jpg",".jpeg",".png",".heic",".heif",".gif",".webp",".tiff",".tif",".bmp",".raw",".cr2",".nef",".arw"],
+      image: [".jpg",".jpeg",".png",".heic",".heif",".gif",".webp",".tiff",".tif",".bmp",".raw",".cr2",".nef",".arw"],
+      images: [".jpg",".jpeg",".png",".heic",".heif",".gif",".webp",".tiff",".tif",".bmp",".raw",".cr2",".nef",".arw"],
+      video: [".mp4",".mov",".avi",".mkv",".m4v",".wmv",".flv",".webm",".mts",".m2ts",".mpg",".mpeg"],
+      videos: [".mp4",".mov",".avi",".mkv",".m4v",".wmv",".flv",".webm",".mts",".m2ts",".mpg",".mpeg"],
+      movie: [".mp4",".mov",".avi",".mkv",".m4v",".wmv",".flv",".webm",".mts",".m2ts",".mpg",".mpeg"],
+      movies: [".mp4",".mov",".avi",".mkv",".m4v",".wmv",".flv",".webm",".mts",".m2ts",".mpg",".mpeg"],
+      audio: [".mp3",".wav",".aif",".aiff",".flac",".m4a",".ogg",".wma",".aac",".opus"],
+      music: [".mp3",".wav",".aif",".aiff",".flac",".m4a",".ogg",".wma",".aac",".opus"],
+      sound: [".mp3",".wav",".aif",".aiff",".flac",".m4a",".ogg",".wma",".aac",".opus"],
+      song: [".mp3",".wav",".aif",".aiff",".flac",".m4a",".ogg",".wma",".aac",".opus"],
+      songs: [".mp3",".wav",".aif",".aiff",".flac",".m4a",".ogg",".wma",".aac",".opus"],
+      track: [".mp3",".wav",".aif",".aiff",".flac",".m4a",".ogg",".wma",".aac",".opus"],
+      tracks: [".mp3",".wav",".aif",".aiff",".flac",".m4a",".ogg",".wma",".aac",".opus"],
+      stem: [".wav",".aif",".aiff",".flac"],
+      stems: [".wav",".aif",".aiff",".flac"],
+      doc: [".pdf",".doc",".docx",".txt",".odt",".rtf",".md",".pages"],
+      docs: [".pdf",".doc",".docx",".txt",".odt",".rtf",".md",".pages"],
+      document: [".pdf",".doc",".docx",".txt",".odt",".rtf",".md",".pages"],
+      documents: [".pdf",".doc",".docx",".txt",".odt",".rtf",".md",".pages"],
+      pdf: [".pdf"],
+      spreadsheet: [".xlsx",".xls",".csv",".ods",".numbers"],
+      spreadsheets: [".xlsx",".xls",".csv",".ods",".numbers"],
+      project: [".als",".logicx",".ptx",".flp",".reason",".cpr",".npr",".omf"],
+      projects: [".als",".logicx",".ptx",".flp",".reason",".cpr",".npr",".omf"],
+      session: [".als",".logicx",".ptx",".flp",".reason",".cpr",".npr",".omf"],
+      sessions: [".als",".logicx",".ptx",".flp",".reason",".cpr",".npr",".omf"],
+      archive: [".zip",".rar",".tar",".gz",".7z",".bz2"],
+      archives: [".zip",".rar",".tar",".gz",".7z",".bz2"],
+    };
+
+    // Detect synonym words in query and convert to extension filters
+    let effectiveQuery = query;
+    let effectiveTypes = types;
+    if (query.trim() && !types) {
+      const qWords = query.toLowerCase().split(/\s+/);
+      const synonymWords = qWords.filter(w => TYPE_SYNONYMS[w]);
+      if (synonymWords.length > 0) {
+        const synonymExts = [...new Set(synonymWords.flatMap(w => TYPE_SYNONYMS[w]))];
+        effectiveTypes = synonymExts.map(e => e.slice(1)).join(","); // strip leading dot
+        effectiveQuery = qWords.filter(w => !TYPE_SYNONYMS[w]).join(" ").trim();
+      }
+    }
+
     const conditions: string[] = [];
     const params: (string | number)[] = [];
 
-    if (types) {
-      const extList = types.split(",").map((t) => t.trim().toLowerCase()).filter(Boolean).map((t) => (t.startsWith(".") ? t : "." + t));
+    if (effectiveTypes) {
+      const extList = effectiveTypes.split(",").map((t) => t.trim().toLowerCase()).filter(Boolean).map((t) => (t.startsWith(".") ? t : "." + t));
       if (extList.length === 1) { conditions.push("extension = ?"); params.push(extList[0]); }
       else if (extList.length > 1) { conditions.push(`extension IN (${extList.map(() => "?").join(",")})`); params.push(...extList); }
     }
@@ -425,8 +435,8 @@ router.get("/querymindr/search", async (req: Request, res: Response) => {
     let allFiles: FileRow[] = [];
     let fuzzyUsed = false;
 
-    if (query.trim()) {
-      const q = query.trim();
+    if (effectiveQuery.trim()) {
+      const q = effectiveQuery.trim();
 
       // Split into words — each word must appear in the filename.
       // Searching name only (not path) keeps results predictable.
@@ -521,137 +531,7 @@ router.get("/querymindr/search", async (req: Request, res: Response) => {
     const total = allFiles.length;
     const paged = allFiles.slice(offset, offset + limitNum);
 
-    res.json({ files: paged.map(formatFileResult), total, page: pageNum, limit: limitNum, fuzzy: fuzzyUsed });
-  } catch (err: unknown) {
-    res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
-  }
-});
-
-router.post("/querymindr/ai-search", async (req: Request, res: Response) => {
-  try {
-    const { description, folder_scope, model } = req.body;
-    const client = getAnthropicClient();
-
-    const STOPWORDS = new Set(["a","an","the","and","or","of","in","on","at","to","for",
-      "with","by","from","is","are","was","were","be","been","have","has","had","do","does",
-      "did","will","would","could","should","may","might","that","this","it","its","i",
-      "my","me","we","about","into","but","not","no","so","if","as","up","out","some",
-      "any","all","both","each","other","such","than","then","there","these","those",
-      "what","which","who","how","when","where","used","use","using","ago","years","year",
-      "couple","few","some","just","get","find","looking","want","need","file","files"]);
-
-    const baseWords = [...new Set(
-      description.toLowerCase().split(/\W+/).filter(w => w.length >= 3 && !STOPWORDS.has(w))
-    )];
-
-    // Also add stemmed variants so "taxes" matches "Tax Documents", "documents" matches "document", etc.
-    function stems(w: string): string[] {
-      const variants = new Set([w]);
-      if (w.endsWith("ies") && w.length > 4) variants.add(w.slice(0, -3) + "y");
-      if (w.endsWith("ves") && w.length > 4) variants.add(w.slice(0, -3) + "f");
-      if (w.endsWith("es")  && w.length > 4) variants.add(w.slice(0, -2));
-      if (w.endsWith("s")   && w.length > 4) variants.add(w.slice(0, -1));
-      if (w.endsWith("ing") && w.length > 5) variants.add(w.slice(0, -3));
-      if (w.endsWith("ed")  && w.length > 4) variants.add(w.slice(0, -2));
-      if (w.endsWith("tion")&& w.length > 5) variants.add(w.slice(0, -4));
-      return [...variants];
-    }
-    const keywords = [...new Set(baseWords.flatMap(stems))];
-
-    // Use SQL LIKE queries per keyword — much faster than loading all files into memory
-    const folderClause = folder_scope ? "AND folder LIKE ?" : "";
-    const folderParam = folder_scope ? [`${folder_scope}%`] : [];
-
-    const seenIds = new Set<number>();
-    const candidates: FileRow[] = [];
-
-    for (const kw of keywords) {
-      const pat = `%${kw}%`;
-      const rows = db.prepare(
-        `SELECT id, path, name, extension, folder, size_bytes, modified_at, ai_summary
-         FROM file_index
-         WHERE (name LIKE ? OR folder LIKE ? OR ai_summary LIKE ?) ${folderClause}
-         LIMIT 150`
-      ).all(pat, pat, pat, ...folderParam) as FileRow[];
-      for (const r of rows) {
-        if (!seenIds.has(r.id)) { seenIds.add(r.id); candidates.push(r); }
-      }
-    }
-
-    // If keywords yielded nothing, fall back to 300 most-recently-modified files
-    if (candidates.length === 0) {
-      const fallback = db.prepare(
-        `SELECT id, path, name, extension, folder, size_bytes, modified_at, ai_summary
-         FROM file_index ${folder_scope ? "WHERE folder LIKE ?" : ""}
-         ORDER BY modified_at DESC LIMIT 300`
-      ).all(...folderParam) as FileRow[];
-      candidates.push(...fallback);
-    }
-
-    if (!client) {
-      const topIds = candidates.slice(0, 20).map((f) => f.id);
-      const full = topIds.length > 0 ? (db.prepare(`SELECT * FROM file_index WHERE id IN (${topIds.map(() => "?").join(",")})`).all(...topIds) as FileRow[]) : [];
-      return res.json({ files: full.map(formatFileResult), explanation: "Fuzzy search results (Claude API key not configured).", total: full.length });
-    }
-
-    const fileList = candidates.map((f) => `ID:${f.id} | ${f.name} | ${f.extension} | ${f.folder} | ${f.ai_summary ?? ""}`).join("\n");
-
-    const response = await client.messages.create({
-      model: resolveModel(model),
-      max_tokens: 1024,
-      messages: [{ role: "user", content: `You are a file search assistant. The user is looking for: "${description}"\n\nFile list (ID | name | extension | folder | summary):\n${fileList}\n\nReturn ONLY a raw JSON object in exactly this shape:\n{"ids":[42,17,8],"explanation":"One sentence describing what you found."}\n\nRules:\n- "ids" must be an array of integer IDs taken exactly from the ID numbers in the file list above\n- Include up to 20 IDs, ordered best match first\n- If nothing matches, use an empty array: {"ids":[],"explanation":"No matching files found."}\n- No markdown, no code fences, no extra text — raw JSON only.` }],
-    });
-
-    const raw = response.content[0].type === "text" ? response.content[0].text : "{}";
-    const text = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
-    let parsed: { ids?: unknown[]; explanation?: string } = {};
-    try { parsed = JSON.parse(text); } catch { parsed = { ids: [], explanation: "Could not parse AI response." }; }
-
-    // Coerce IDs to integers — Claude sometimes returns strings or floats
-    const matchedIds: number[] = (parsed.ids ?? [])
-      .map((v) => parseInt(String(v), 10))
-      .filter((n) => !isNaN(n));
-    const matchedFiles = matchedIds.length > 0 ? (db.prepare(`SELECT * FROM file_index WHERE id IN (${matchedIds.map(() => "?").join(",")})`).all(...matchedIds) as FileRow[]) : [];
-    // Use loose equality (==) so string "42" matches integer 42
-    const sortedFiles = matchedIds.map((id) => matchedFiles.find((f) => f.id == id)).filter(Boolean) as FileRow[];
-
-    res.json({ files: sortedFiles.map(formatFileResult), explanation: parsed.explanation ?? "", total: sortedFiles.length });
-  } catch (err: unknown) {
-    res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
-  }
-});
-
-router.post("/querymindr/ai-summarize", async (req: Request, res: Response) => {
-  try {
-    const { file_id, model } = req.body;
-    const client = getAnthropicClient();
-
-    const file = db.prepare("SELECT * FROM file_index WHERE id = ?").get(file_id) as FileRow | undefined;
-    if (!file) return res.status(404).json({ error: "File not found" });
-
-    if (!client) {
-      const fallback = `${file.name} — ${file.extension} file, ${((file.size_bytes ?? 0) / 1024).toFixed(0)} KB, last modified ${file.modified_at ? new Date(file.modified_at).toLocaleDateString() : "unknown"}`;
-      db.prepare("UPDATE file_index SET ai_summary = ? WHERE id = ?").run(fallback, file_id);
-      return res.json({ summary: fallback, file_id });
-    }
-
-    let content = file.content_text ?? "";
-    if (!content) content = await extractTextContent(file.path, file.extension);
-
-    const prompt = content
-      ? `Summarize this file in 1-2 sentences. File: "${file.name}" (${file.extension})\n\nContent:\n${content.slice(0, 3000)}`
-      : `Describe what this file likely contains based on its name and type. File: "${file.name}" (${file.extension}), size: ${((file.size_bytes ?? 0) / 1024).toFixed(0)} KB, folder: "${file.folder}"`;
-
-    const response = await client.messages.create({
-      model: resolveModel(model),
-      max_tokens: 200,
-      messages: [{ role: "user", content: prompt }],
-    });
-
-    const summary = response.content[0].type === "text" ? response.content[0].text : "";
-    db.prepare("UPDATE file_index SET ai_summary = ? WHERE id = ?").run(summary, file_id);
-
-    res.json({ summary, file_id });
+    res.json({ files: paged.map(formatFileResult), total, page: pageNum, limit: limitNum, fuzzy: fuzzyUsed, synonym_types: effectiveTypes !== types ? effectiveTypes : undefined });
   } catch (err: unknown) {
     res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
   }
@@ -659,39 +539,18 @@ router.post("/querymindr/ai-summarize", async (req: Request, res: Response) => {
 
 router.post("/querymindr/more-like-this", async (req: Request, res: Response) => {
   try {
-    const { file_id, limit: limitRaw = 20, model } = req.body;
+    const { file_id, limit: limitRaw = 20 } = req.body;
     const limitNum = Math.min(50, Math.max(1, parseInt(String(limitRaw))));
 
     const file = db.prepare("SELECT * FROM file_index WHERE id = ?").get(file_id) as FileRow | undefined;
     if (!file) return res.status(404).json({ files: [], total: 0, page: 1, limit: limitNum });
 
-    const client = getAnthropicClient();
-    const allFiles = db.prepare("SELECT id, path, name, extension, folder, size_bytes, modified_at, ai_summary FROM file_index WHERE id != ? LIMIT 2000").all(file_id) as FileRow[];
-
-    if (!client) {
-      const fuse = new Fuse(allFiles, { keys: ["name", "folder", "extension", "ai_summary"], threshold: 0.5 });
-      const results = fuse.search(file.name).slice(0, limitNum).map((r) => r.item);
-      const ids = results.map((r) => r.id);
-      const full = ids.length > 0 ? (db.prepare(`SELECT * FROM file_index WHERE id IN (${ids.map(() => "?").join(",")})`).all(...ids) as FileRow[]) : [];
-      return res.json({ files: full.map(formatFileResult), total: full.length, page: 1, limit: limitNum });
-    }
-
-    const fileList = allFiles.slice(0, 800).map((f) => `ID:${f.id} | ${f.name} | ${f.extension} | ${f.folder} | ${f.ai_summary ?? ""}`).join("\n");
-
-    const response = await client.messages.create({
-      model: resolveModel(model),
-      max_tokens: 512,
-      messages: [{ role: "user", content: `Find files similar to: "${file.name}" (${file.extension}, folder: ${file.folder}, summary: "${file.ai_summary ?? "none"}")\n\nFile list:\n${fileList}\n\nReturn JSON: {"ids": [array of up to ${limitNum} most similar file IDs]}. Return ONLY valid JSON.` }],
-    });
-
-    const text = response.content[0].type === "text" ? response.content[0].text : "{}";
-    let parsed: { ids?: number[] } = {};
-    try { parsed = JSON.parse(text); } catch { parsed = { ids: [] }; }
-
-    const matchedIds = parsed.ids ?? [];
-    const matchedFiles = matchedIds.length > 0 ? (db.prepare(`SELECT * FROM file_index WHERE id IN (${matchedIds.map(() => "?").join(",")})`).all(...matchedIds) as FileRow[]) : [];
-
-    res.json({ files: matchedFiles.map(formatFileResult), total: matchedFiles.length, page: 1, limit: limitNum });
+    const allFiles = db.prepare("SELECT id, path, name, extension, folder, size_bytes, modified_at FROM file_index WHERE id != ? LIMIT 2000").all(file_id) as FileRow[];
+    const fuse = new Fuse(allFiles, { keys: ["name", "folder", "extension"], threshold: 0.5 });
+    const results = fuse.search(file.name).slice(0, limitNum).map((r) => r.item);
+    const ids = results.map((r) => r.id);
+    const full = ids.length > 0 ? (db.prepare(`SELECT * FROM file_index WHERE id IN (${ids.map(() => "?").join(",")})`).all(...ids) as FileRow[]) : [];
+    return res.json({ files: full.map(formatFileResult), total: full.length, page: 1, limit: limitNum });
   } catch (err: unknown) {
     res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
   }

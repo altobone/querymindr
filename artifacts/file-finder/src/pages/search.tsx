@@ -1,26 +1,20 @@
 import { useState, useEffect } from "react";
-import { useSearchFiles, useAiSearchFiles, useAiSummarizeFile, useMoreLikeThis, useOpenInFinder, useGetFolders } from "@workspace/api-client-react";
+import { useSearchFiles, useMoreLikeThis, useOpenInFinder, useGetFolders } from "@workspace/api-client-react";
 import { formatBytes, formatDate, cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Search, Sparkles, Folder, FolderOpen, FileText, Calendar, HardDrive, File as FileIcon, X, Maximize2, MoreHorizontal, TerminalSquare, Copy, Filter, Loader2 } from "lucide-react";
+import { Search, Folder, FolderOpen, FileText, Calendar, HardDrive, File as FileIcon, X, Maximize2, Copy, Filter, Loader2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import type { FileResult, SearchFilesSortBy, SearchFilesSortOrder } from "@workspace/api-client-react/src/generated/api.schemas";
 
-const MODEL_STORAGE_KEY = "querymindr-ai-model";
-
 export default function SearchPage() {
   const [query, setQuery] = useState("");
-  const [isAiSearch, setIsAiSearch] = useState(false);
   const [selectedFile, setSelectedFile] = useState<FileResult | null>(null);
-  const aiModel = () => localStorage.getItem(MODEL_STORAGE_KEY) ?? "claude-haiku-4-5";
-  
+
   // Filters
   const [folderScope, setFolderScope] = useState<string>("all");
   const [sortBy, setSortBy] = useState<SearchFilesSortBy>("date");
@@ -32,16 +26,13 @@ export default function SearchPage() {
   const [folderResults, setFolderResults] = useState<string[]>([]);
   const [browseReturnQuery, setBrowseReturnQuery] = useState<string>("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
-  const [aiConfigured, setAiConfigured] = useState(false);
   const [slowSearchVisible, setSlowSearchVisible] = useState(false);
 
   const { data: foldersData } = useGetFolders();
   const { toast } = useToast();
 
   const openFinder = useOpenInFinder();
-  const summarizeFile = useAiSummarizeFile();
   const moreLikeThis = useMoreLikeThis();
-  const aiSearch = useAiSearchFiles();
 
   // Debounce the file search query so it fires once after typing stops,
   // not on every keystroke. Folder search has its own 300ms debounce via useEffect.
@@ -50,21 +41,8 @@ export default function SearchPage() {
     return () => clearTimeout(t);
   }, [query]);
 
-  // Check whether a Claude API key has been configured.
-  // AI features are hidden entirely when it hasn't been — no error messages.
-  useEffect(() => {
-    fetch("/api/querymindr/ai-config")
-      .then((r) => r.json())
-      .then((data) => {
-        const configured = !!data.configured;
-        setAiConfigured(configured);
-        if (!configured) setIsAiSearch(false);
-      })
-      .catch(() => { setAiConfigured(false); setIsAiSearch(false); });
-  }, []);
-
   const { data: searchResults, isFetching: isSearchLoading, refetch: refetchSearch } = useSearchFiles({
-    query: isAiSearch ? undefined : debouncedQuery,
+    query: debouncedQuery,
     folder_scope: folderScope !== "all" ? folderScope : undefined,
     sort_by: sortBy,
     sort_order: sortOrder,
@@ -72,10 +50,8 @@ export default function SearchPage() {
     size_min: sizeMin ? parseInt(sizeMin) : undefined,
     size_max: sizeMax ? parseInt(sizeMax) : undefined,
     limit: 50,
-  }, { query: { enabled: !isAiSearch && (debouncedQuery.length > 0 || folderScope !== "all") } });
+  }, { query: { enabled: debouncedQuery.length > 0 || folderScope !== "all" } });
 
-  const [aiResults, setAiResults] = useState<FileResult[]>([]);
-  const [aiExplanation, setAiExplanation] = useState<string>("");
   const [similarResults, setSimilarResults] = useState<FileResult[] | null>(null);
 
   // Show a hint after 1.5s of loading — exact searches finish instantly,
@@ -86,16 +62,9 @@ export default function SearchPage() {
     return () => clearTimeout(t);
   }, [isSearchLoading]);
 
-  useEffect(() => {
-    if (!isAiSearch) {
-      setAiResults([]);
-      setAiExplanation("");
-    }
-  }, [isAiSearch]);
-
   // Folder search fires reactively as the user types (debounced 300ms)
   useEffect(() => {
-    if (isAiSearch || !query.trim()) {
+    if (!query.trim()) {
       setFolderResults([]);
       return;
     }
@@ -106,27 +75,11 @@ export default function SearchPage() {
         .catch(() => setFolderResults([]));
     }, 300);
     return () => clearTimeout(timer);
-  }, [query, isAiSearch]);
+  }, [query]);
 
   const handleSearch = () => {
     setSimilarResults(null);
-    if (isAiSearch && query) {
-      setFolderResults([]);
-      aiSearch.mutate({
-        data: {
-          description: query,
-          folder_scope: folderScope !== "all" ? folderScope : undefined,
-          model: aiModel(),
-        }
-      }, {
-        onSuccess: (data) => {
-          setAiResults(data.files);
-          setAiExplanation(data.explanation);
-        }
-      });
-    } else {
-      refetchSearch();
-    }
+    refetchSearch();
   };
 
   const handleBrowseFolder = (folderPath: string) => {
@@ -156,31 +109,17 @@ export default function SearchPage() {
     });
   };
 
-  const handleSummarize = (fileId: number) => {
-    summarizeFile.mutate({ data: { file_id: fileId, model: aiModel() } }, {
-      onSuccess: (data) => {
-        if (selectedFile?.id === fileId) {
-          setSelectedFile({ ...selectedFile, ai_summary: data.summary });
-        }
-      }
-    });
-  };
-
   const handleMoreLikeThis = (fileId: number) => {
-    moreLikeThis.mutate({ data: { file_id: fileId, limit: 20, model: aiModel() } }, {
+    moreLikeThis.mutate({ data: { file_id: fileId, limit: 20 } }, {
       onSuccess: (data) => {
-        setIsAiSearch(false);
-        // We'll hijack the search query field to show we are looking at similar files
         setQuery(`Similar to file #${fileId}`);
-        // Instead of overriding the query cache which is complex, we can just store the similar results locally
-        // But since searchFiles hook manages data, a better way is to set local state for override
         setSimilarResults(data.files);
       }
     });
   };
 
-  const files = similarResults ? similarResults : (isAiSearch ? aiResults : (searchResults?.files || []));
-  const isLoading = isAiSearch ? aiSearch.isPending : (similarResults ? moreLikeThis.isPending : isSearchLoading);
+  const files = similarResults ? similarResults : (searchResults?.files || []);
+  const isLoading = similarResults ? moreLikeThis.isPending : isSearchLoading;
 
   return (
     <div className="flex h-full w-full">
@@ -189,30 +128,13 @@ export default function SearchPage() {
         <div className="border-b border-border bg-card p-6 flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold tracking-tight" style={{ color: "#e8ff47" }}>Search</h2>
-            {aiConfigured && (
-              <div className="flex items-center gap-3">
-                <Label htmlFor="ai-mode" className="text-sm font-medium flex items-center gap-2 cursor-pointer">
-                  <Search className="w-4 h-4 text-muted-foreground" />
-                  Standard
-                </Label>
-                <Switch
-                  id="ai-mode"
-                  checked={isAiSearch}
-                  onCheckedChange={setIsAiSearch}
-                />
-                <Label htmlFor="ai-mode" className="text-sm font-medium flex items-center gap-2 cursor-pointer">
-                  <Sparkles className="w-4 h-4 text-primary" />
-                  AI Magic
-                </Label>
-              </div>
-            )}
           </div>
 
           <div className="flex items-center gap-3">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
-                placeholder={isAiSearch ? "Describe what you're looking for (e.g. 'tax documents from last year')" : "Search by filename..."}
+                placeholder="Search by filename..."
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSearch()}
@@ -239,15 +161,14 @@ export default function SearchPage() {
             </Button>
           </div>
 
-          {slowSearchVisible && isSearchLoading && !isAiSearch && (
+          {slowSearchVisible && isSearchLoading && (
             <div className="flex items-center gap-2 text-xs text-muted-foreground animate-pulse">
               <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />
               No exact match found — searching for approximate results…
             </div>
           )}
 
-          {!isAiSearch && (
-            <div className="flex items-center gap-4 text-sm">
+          <div className="flex items-center gap-4 text-sm">
               <Popover open={filtersOpen} onOpenChange={setFiltersOpen}>
                 <PopoverTrigger asChild>
                   <Button variant="outline" size="sm" className="h-8 gap-2 border-dashed">
@@ -325,10 +246,9 @@ export default function SearchPage() {
                 </Select>
               </div>
             </div>
-          )}
-          
+
           {/* Active filter chips */}
-          {((folderScope !== "all") || (!isAiSearch && (fileTypes || sizeMin || sizeMax))) && (
+          {((folderScope !== "all") || (fileTypes || sizeMin || sizeMax)) && (
             <div className="flex flex-wrap gap-2">
               {folderScope !== "all" && (
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20">
@@ -347,7 +267,7 @@ export default function SearchPage() {
                   </button>
                 </span>
               )}
-              {!isAiSearch && fileTypes && (
+              {fileTypes && (
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20">
                   <FileText className="w-3 h-3 shrink-0" />
                   Type: {fileTypes}
@@ -356,7 +276,7 @@ export default function SearchPage() {
                   </button>
                 </span>
               )}
-              {!isAiSearch && (sizeMin || sizeMax) && (
+              {(sizeMin || sizeMax) && (
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20">
                   <HardDrive className="w-3 h-3 shrink-0" />
                   Size: {sizeMin ? formatBytes(parseInt(sizeMin)) : "any"} – {sizeMax ? formatBytes(parseInt(sizeMax)) : "any"}
@@ -368,12 +288,6 @@ export default function SearchPage() {
             </div>
           )}
 
-          {aiExplanation && (
-            <div className="text-sm bg-primary/10 text-primary px-4 py-3 rounded-md border border-primary/20 flex gap-3 items-start">
-              <Sparkles className="w-4 h-4 mt-0.5 shrink-0" />
-              <p>{aiExplanation}</p>
-            </div>
-          )}
         </div>
 
         <ScrollArea className="flex-1 bg-background">
@@ -432,7 +346,7 @@ export default function SearchPage() {
             )}
 
             {/* Fuzzy match banner */}
-            {!isLoading && !isAiSearch && (searchResults as { fuzzy?: boolean })?.fuzzy && files.length > 0 && (
+            {!isLoading && (searchResults as { fuzzy?: boolean })?.fuzzy && files.length > 0 && (
               <div className="flex items-center gap-2 px-3 py-2 rounded-md text-xs" style={{ color: "#e8ff47", backgroundColor: "rgba(232,255,71,0.07)", border: "1px solid rgba(232,255,71,0.25)" }}>
                 <Search className="w-3.5 h-3.5 shrink-0" style={{ color: "#e8ff47" }} />
                 No exact matches — showing approximate results for <span className="font-medium mx-1" style={{ color: "#e8ff47" }}>"{debouncedQuery}"</span>
@@ -549,33 +463,6 @@ export default function SearchPage() {
                     <span className="col-span-2 font-mono text-xs break-all bg-secondary p-1.5 rounded">{selectedFile.path}</span>
                   </div>
                 </div>
-
-                {aiConfigured && (
-                  <>
-                    <Separator />
-                    <div className="space-y-3">
-                      <h4 className="font-medium text-sm flex items-center gap-2">
-                        <Sparkles className="w-4 h-4 text-primary" />
-                        AI Summary
-                      </h4>
-                      {selectedFile.ai_summary ? (
-                        <p className="text-sm text-muted-foreground leading-relaxed bg-secondary/50 p-3 rounded-md border border-border/50">
-                          {selectedFile.ai_summary}
-                        </p>
-                      ) : (
-                        <Button 
-                          variant="outline" 
-                          className="w-full justify-start text-muted-foreground h-auto py-3"
-                          onClick={() => handleSummarize(selectedFile.id)}
-                          disabled={summarizeFile.isPending}
-                        >
-                          <TerminalSquare className="w-4 h-4 mr-2" />
-                          {summarizeFile.isPending ? "Generating summary..." : "Generate AI Summary"}
-                        </Button>
-                      )}
-                    </div>
-                  </>
-                )}
 
                 <Separator />
 

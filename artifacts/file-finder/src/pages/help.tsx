@@ -1,15 +1,11 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Badge } from "@/components/ui/badge";
 import {
   Search,
   Waves,
   FolderOpen,
-  Sparkles,
-  FileText,
   Copy,
   HardDrive,
   RefreshCw,
-  Zap,
   BookOpen,
   Fingerprint,
   TriangleAlert,
@@ -20,26 +16,14 @@ interface FeatureCardProps {
   icon: React.ReactNode;
   title: string;
   description: string;
-  requiresKey?: boolean;
 }
 
-function FeatureCard({ icon, title, description, requiresKey }: FeatureCardProps) {
+function FeatureCard({ icon, title, description }: FeatureCardProps) {
   return (
     <div className="bg-card border border-border rounded-lg p-5 flex flex-col gap-3">
       <div style={{ color: "#e8ff47" }}>{icon}</div>
       <div>
-        <div className="flex items-center gap-2 mb-1.5">
-          <h3 className="font-semibold text-foreground text-sm">{title}</h3>
-          {requiresKey ? (
-            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 font-medium tracking-wide uppercase">
-              API Key Required
-            </Badge>
-          ) : (
-            <Badge variant="outline" className="text-[10px] px-1.5 py-0 font-medium tracking-wide uppercase text-muted-foreground">
-              No API Key Needed
-            </Badge>
-          )}
-        </div>
+        <h3 className="font-semibold text-foreground text-sm mb-1.5">{title}</h3>
         <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
       </div>
     </div>
@@ -79,19 +63,13 @@ export default function HelpPage() {
           <section className="space-y-4">
             <p className="text-muted-foreground leading-relaxed">
               Querymindr is a local search tool built for large external drives. It indexes every file
-              on your drive into a fast database on your Mac — then lets you search by word, partial
-              title, or plain language in seconds, no matter how many terabytes you have.
+              on your drive into a fast local database — then lets you search by word, partial name,
+              or phrase in seconds, no matter how many terabytes you have.
               It also scans for duplicate files so you can reclaim wasted space without guessing.
               Everything runs on your machine. Your files never leave your computer.
             </p>
             <p className="text-muted-foreground leading-relaxed">
-              Querymindr works great right out of the box — no account, no subscription, no internet
-              connection required. But add a free API key from{" "}
-              <span className="text-foreground font-medium">Anthropic</span> and you unlock a whole
-              new level of power: describe what you're looking for in plain English and let AI find
-              it for you, get instant summaries of large search results, and surface files you didn't
-              even know to search for. Go to{" "}
-              <strong className="text-foreground">Settings → Anthropic API Key</strong> to add yours.
+              No account, no subscription, no internet connection required. Just index and search.
             </p>
           </section>
 
@@ -127,18 +105,6 @@ export default function HelpPage() {
                 icon={<Fingerprint className="w-5 h-5" />}
                 title="Duplicate Finder"
                 description="The Duplicates page scans your index for files with identical content (by checksum) so you can safely identify and remove copies to reclaim space."
-              />
-              <FeatureCard
-                icon={<Sparkles className="w-5 h-5" />}
-                title="AI Magic Search"
-                description={"Describe what you're looking for in plain language \u2014 \"invoices from last year over $500\" \u2014 and Claude finds the best matches across your entire drive."}
-                requiresKey
-              />
-              <FeatureCard
-                icon={<FileText className="w-5 h-5" />}
-                title="AI Summary"
-                description="After a search, click Generate AI Summary to get a plain-English overview of what was found — useful for large result sets."
-                requiresKey
               />
             </div>
           </section>
@@ -196,23 +162,6 @@ export default function HelpPage() {
                 <p className="text-sm text-muted-foreground leading-relaxed pl-10">
                   Type anything into the search bar. Results appear instantly. Click any result to
                   open the detail panel where you can Reveal in Finder, copy the path, or find similar files.
-                </p>
-              </div>
-
-              <div className="bg-card border border-border rounded-lg p-5">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                    <span className="text-primary font-bold text-xs">4</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Sparkles className="w-4 h-4" style={{ color: "#e8ff47" }} />
-                    <h3 className="font-semibold text-foreground text-sm">Enable AI (Optional)</h3>
-                  </div>
-                </div>
-                <p className="text-sm text-muted-foreground leading-relaxed pl-10">
-                  Go to <strong className="text-foreground">Settings → Anthropic API Key</strong> and paste your key from{" "}
-                  <span className="text-foreground font-medium">console.anthropic.com</span>.
-                  The AI Magic and Summary features will appear in the search bar automatically.
                 </p>
               </div>
 
