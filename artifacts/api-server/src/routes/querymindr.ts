@@ -532,52 +532,47 @@ router.post("/querymindr/ai-search", async (req: Request, res: Response) => {
     const { description, folder_scope, model } = req.body;
     const client = getAnthropicClient();
 
-    const where = folder_scope ? "WHERE folder LIKE ?" : "";
-    const params = folder_scope ? [`${folder_scope}%`] : [];
-
-    // Fetch entire index — no limit so no files are silently excluded
-    const allFiles = db.prepare(`SELECT id, path, name, extension, folder, size_bytes, modified_at, ai_summary FROM file_index ${where}`).all(...params) as FileRow[];
-
-    // Pre-filter: run fuzzy search across full index so Claude only sees relevant candidates.
-    // Strategy: search by (a) full description and (b) each meaningful keyword individually,
-    // then merge. This prevents long phrases from scoring poorly against short filenames.
     const STOPWORDS = new Set(["a","an","the","and","or","of","in","on","at","to","for",
       "with","by","from","is","are","was","were","be","been","have","has","had","do","does",
       "did","will","would","could","should","may","might","that","this","it","its","i",
       "my","me","we","about","into","but","not","no","so","if","as","up","out","some",
       "any","all","both","each","other","such","than","then","there","these","those",
-      "what","which","who","how","when","where","used","use","using"]);
+      "what","which","who","how","when","where","used","use","using","ago","years","year",
+      "couple","few","some","just","get","find","looking","want","need","file","files"]);
 
     const keywords = [...new Set(
       description.toLowerCase().split(/\W+/).filter(w => w.length >= 3 && !STOPWORDS.has(w))
     )];
 
-    const fuse = new Fuse(allFiles, {
-      keys: [
-        { name: "name",       weight: 0.6 },
-        { name: "folder",     weight: 0.25 },
-        { name: "ai_summary", weight: 0.15 },
-      ],
-      threshold: 0.4,
-      includeScore: true,
-    });
+    // Use SQL LIKE queries per keyword — much faster than loading all files into memory
+    const folderClause = folder_scope ? "AND folder LIKE ?" : "";
+    const folderParam = folder_scope ? [`${folder_scope}%`] : [];
 
-    // Collect scored hits from full description + each individual keyword
-    const hitMap = new Map<number, { item: FileRow; score: number }>();
-    const addHits = (query: string, scoreBoost = 0) => {
-      fuse.search(query).forEach(r => {
-        const id = r.item.id;
-        const s = (r.score ?? 1) - scoreBoost;
-        if (!hitMap.has(id) || hitMap.get(id)!.score > s) hitMap.set(id, { item: r.item, score: s });
-      });
-    };
-    addHits(description);
-    keywords.forEach(kw => addHits(kw, 0.05)); // slight boost for keyword hits
+    const seenIds = new Set<number>();
+    const candidates: FileRow[] = [];
 
-    const sorted = [...hitMap.values()].sort((a, b) => a.score - b.score);
-    const candidates: FileRow[] = sorted.length > 0
-      ? sorted.slice(0, 300).map(h => h.item)
-      : allFiles.slice(0, 300);
+    for (const kw of keywords) {
+      const pat = `%${kw}%`;
+      const rows = db.prepare(
+        `SELECT id, path, name, extension, folder, size_bytes, modified_at, ai_summary
+         FROM file_index
+         WHERE (name LIKE ? OR folder LIKE ? OR ai_summary LIKE ?) ${folderClause}
+         LIMIT 150`
+      ).all(pat, pat, pat, ...folderParam) as FileRow[];
+      for (const r of rows) {
+        if (!seenIds.has(r.id)) { seenIds.add(r.id); candidates.push(r); }
+      }
+    }
+
+    // If keywords yielded nothing, fall back to 300 most-recently-modified files
+    if (candidates.length === 0) {
+      const fallback = db.prepare(
+        `SELECT id, path, name, extension, folder, size_bytes, modified_at, ai_summary
+         FROM file_index ${folder_scope ? "WHERE folder LIKE ?" : ""}
+         ORDER BY modified_at DESC LIMIT 300`
+      ).all(...folderParam) as FileRow[];
+      candidates.push(...fallback);
+    }
 
     if (!client) {
       const topIds = candidates.slice(0, 20).map((f) => f.id);
