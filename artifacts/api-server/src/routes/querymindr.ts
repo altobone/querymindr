@@ -534,17 +534,33 @@ router.post("/querymindr/ai-search", async (req: Request, res: Response) => {
 
     const where = folder_scope ? "WHERE folder LIKE ?" : "";
     const params = folder_scope ? [`${folder_scope}%`] : [];
-    const allFiles = db.prepare(`SELECT id, path, name, extension, folder, size_bytes, modified_at, ai_summary FROM file_index ${where} LIMIT 2000`).all(...params) as FileRow[];
+
+    // Fetch entire index — no limit so no files are silently excluded
+    const allFiles = db.prepare(`SELECT id, path, name, extension, folder, size_bytes, modified_at, ai_summary FROM file_index ${where}`).all(...params) as FileRow[];
+
+    // Always pre-filter with fuzzy search so Claude only sees the most relevant candidates
+    const fuse = new Fuse(allFiles, {
+      keys: [
+        { name: "name",       weight: 0.6 },
+        { name: "folder",     weight: 0.25 },
+        { name: "ai_summary", weight: 0.15 },
+      ],
+      threshold: 0.5,
+      includeScore: true,
+    });
+    const fuzzyHits = fuse.search(description);
+    // If fuzzy found good candidates use top 300, otherwise fall back to first 300 by recency
+    const candidates: FileRow[] = fuzzyHits.length > 0
+      ? fuzzyHits.slice(0, 300).map((r) => r.item)
+      : allFiles.slice(0, 300);
 
     if (!client) {
-      const fuse = new Fuse(allFiles, { keys: ["name", "folder", "ai_summary"], threshold: 0.4 });
-      const results = fuse.search(description).slice(0, 20).map((r) => r.item);
-      const ids = results.map((r) => r.id);
-      const full = ids.length > 0 ? (db.prepare(`SELECT * FROM file_index WHERE id IN (${ids.map(() => "?").join(",")})`).all(...ids) as FileRow[]) : [];
+      const topIds = candidates.slice(0, 20).map((f) => f.id);
+      const full = topIds.length > 0 ? (db.prepare(`SELECT * FROM file_index WHERE id IN (${topIds.map(() => "?").join(",")})`).all(...topIds) as FileRow[]) : [];
       return res.json({ files: full.map(formatFileResult), explanation: "Fuzzy search results (Claude API key not configured).", total: full.length });
     }
 
-    const fileList = allFiles.slice(0, 1000).map((f) => `ID:${f.id} | ${f.name} | ${f.extension} | ${f.folder} | ${f.ai_summary ?? ""}`).join("\n");
+    const fileList = candidates.map((f) => `ID:${f.id} | ${f.name} | ${f.extension} | ${f.folder} | ${f.ai_summary ?? ""}`).join("\n");
 
     const response = await client.messages.create({
       model: resolveModel(model),
