@@ -437,50 +437,76 @@ router.get("/querymindr/search", async (req: Request, res: Response) => {
 
     if (effectiveQuery.trim()) {
       const q = effectiveQuery.trim();
-
-      // Split into words — each word must appear in the filename.
-      // Searching name only (not path) keeps results predictable.
-      // Word-level matching handles separators: "76-trombones" matches "76 trombones"
-      // because both "76" and "trombones" are substrings of "76-trombones".
       const words = q.split(/\s+/).filter(Boolean);
 
-      // Stage 1: all words must appear in the filename
-      const wordClauses = words.map(() => "LOWER(name) LIKE LOWER(?)");
-      const wordParams: (string | number)[] = words.map((w) => `%${w}%`);
+      // ── Stage 1: Exact match ─────────────────────────────────────────────────
+      // Each word must appear in the filename OR the folder path (case-insensitive
+      // substring). This lets "2023 sessions" find files inside a folder called
+      // "2023 Sessions" even when the filename itself is just "track01.wav".
+      //
+      // Ranking within exact results (best → worst):
+      //   A) full phrase appears in the filename
+      //   B) all words appear in the filename
+      //   C) all words appear somewhere (name or folder)
+      const wordClauses = words.map(() => "(LOWER(name) LIKE LOWER(?) OR LOWER(folder) LIKE LOWER(?))");
+      const wordParams: (string | number)[] = words.flatMap((w) => [`%${w}%`, `%${w}%`]);
 
-      const nameConditions = [...conditions, ...wordClauses];
-      const nameParams: (string | number)[] = [...params, ...wordParams];
-      const nameWhere = `WHERE ${nameConditions.join(" AND ")}`;
-      const exact = db.prepare(`SELECT * FROM file_index ${nameWhere} ORDER BY ${sortCol} ${order}`).all(...nameParams) as FileRow[];
+      const exactConditions = [...conditions, ...wordClauses];
+      const exactParams: (string | number)[] = [...params, ...wordParams];
+      const exactWhere = `WHERE ${exactConditions.join(" AND ")}`;
+      const exact = db.prepare(`SELECT * FROM file_index ${exactWhere} ORDER BY ${sortCol} ${order}`).all(...exactParams) as FileRow[];
 
       if (exact.length > 0) {
-        // Sort so files whose name contains the full query phrase rank first
         allFiles = exact.sort((a, b) => {
-          const aFull = a.name.toLowerCase().includes(q.toLowerCase()) ? 0 : 1;
-          const bFull = b.name.toLowerCase().includes(q.toLowerCase()) ? 0 : 1;
-          return aFull - bFull;
+          const aRank =
+            a.name.toLowerCase().includes(q.toLowerCase()) ? 0 :     // full phrase in name
+            words.every(w => a.name.toLowerCase().includes(w.toLowerCase())) ? 1 : // all words in name
+            2;                                                          // words split across name+folder
+          const bRank =
+            b.name.toLowerCase().includes(q.toLowerCase()) ? 0 :
+            words.every(w => b.name.toLowerCase().includes(w.toLowerCase())) ? 1 :
+            2;
+          return aRank - bRank;
         });
       } else if (q.length >= 3) {
+
+        // ── Stage 2: Fuzzy fallback ───────────────────────────────────────────
+        // Only fires when zero exact matches were found.
+        //
+        // Improvements:
+        //   • Stem expansion: each word is expanded into morphological variants
+        //     ("recordings" → recording, recorded, record) so Fuse finds roots
+        //     even when the user types an inflected form.
+        //   • n-gram SQL pre-filter applied to BOTH name and folder, so fuzzy
+        //     can surface files whose folder name closely matches the query.
+        //   • Combined-score ranking: instead of ordering by the longest word's
+        //     Fuse score alone, we sum each word's best score per file and sort
+        //     ascending — lower combined score = better overall match.
+
         fuzzyUsed = true;
-        // Stage 2: per-word fuzzy fallback — only fires when zero exact matches.
-        //
-        // PERFORMANCE: Instead of loading the entire table into Fuse.js (slow on large
-        // drives), we first pre-filter via SQL using an interior substring of each word
-        // (dropping the first and last character). This is robust to single-char typos
-        // at either end: "trombonesw" → core "rombones" → LIKE '%rombones%' → matches
-        // "Trombones". We then run Fuse only on those SQL-filtered candidates.
-        //
-        // Fallback: if the SQL pre-filter finds nothing (very short words or exotic typos)
-        // we fall back to a hard-capped full-table scan so the query always completes.
 
-        const FUZZY_CAP = 50_000; // never feed Fuse more than this many rows
+        // Stem expansion: generate plausible root/variant forms of a word.
+        // This is intentionally conservative — it strips common English suffixes
+        // without a full morphological analyser, so false stems are minimal.
+        const getStems = (w: string): string[] => {
+          const v = new Set([w]);
+          if (w.endsWith("ings") && w.length > 6)  { v.add(w.slice(0, -4)); v.add(w.slice(0, -4) + "e"); }
+          if (w.endsWith("ing")  && w.length > 5)  { v.add(w.slice(0, -3)); v.add(w.slice(0, -3) + "e"); }
+          if (w.endsWith("tion") && w.length > 6)  { v.add(w.slice(0, -4)); v.add(w.slice(0, -4) + "e"); }
+          if (w.endsWith("tions")&& w.length > 7)  { v.add(w.slice(0, -5)); v.add(w.slice(0, -5) + "e"); }
+          if (w.endsWith("ies")  && w.length > 5)  { v.add(w.slice(0, -3) + "y"); v.add(w.slice(0, -3) + "ie"); }
+          if (w.endsWith("ves")  && w.length > 5)  { v.add(w.slice(0, -3) + "f"); v.add(w.slice(0, -3) + "fe"); }
+          if (w.endsWith("ers")  && w.length > 5)  { v.add(w.slice(0, -3)); v.add(w.slice(0, -2)); }
+          if (w.endsWith("er")   && w.length > 4)  { v.add(w.slice(0, -2)); }
+          if (w.endsWith("ed")   && w.length > 4)  { v.add(w.slice(0, -2)); v.add(w.slice(0, -1)); }
+          if (w.endsWith("es")   && w.length > 4)  { v.add(w.slice(0, -2)); v.add(w.slice(0, -1)); }
+          if (w.endsWith("s")    && w.length > 4)  { v.add(w.slice(0, -1)); }
+          if (w.endsWith("ly")   && w.length > 5)  { v.add(w.slice(0, -2)); v.add(w.slice(0, -2) + "le"); }
+          return [...v];
+        };
 
-        // Build OR clauses using overlapping n-grams for SQL pre-filtering.
-        // Using a single core substring (old approach) fails for interior typos because
-        // the core itself contains the typo. N-grams solve this: for a word of length N
-        // with 1 typo, at least (N - gramSize) grams are correct and will match via LIKE.
-        // E.g. "documant" (typo of "document") → 4-grams: "docu","ocum","cuma","uman","mant"
-        // → "docu" and "ocum" are valid substrings of "document", so SQL finds it.
+        // n-gram pre-filter: build grams from all stem variants of all words,
+        // match against BOTH name and folder to widen the candidate pool.
         const getGrams = (word: string): string[] => {
           const n = word.length >= 8 ? 4 : word.length >= 5 ? 3 : word.length;
           if (word.length <= n) return [word];
@@ -489,10 +515,12 @@ router.get("/querymindr/search", async (req: Request, res: Response) => {
           return grams;
         };
 
-        const allGrams = [...new Set(words.flatMap(getGrams))];
-        const orClauses = allGrams.map(() => "LOWER(name) LIKE LOWER(?)").join(" OR ");
-        const orParams = allGrams.map((g) => `%${g}%`);
+        const allStemWords = [...new Set(words.flatMap(getStems))];
+        const allGrams = [...new Set(allStemWords.flatMap(getGrams))];
+        const orClauses = allGrams.map(() => "LOWER(name) LIKE LOWER(?) OR LOWER(folder) LIKE LOWER(?)").join(" OR ");
+        const orParams = allGrams.flatMap((g) => [`%${g}%`, `%${g}%`]);
 
+        const FUZZY_CAP = 50_000;
         const preFilterWhere = conditions.length > 0
           ? `WHERE ${conditions.join(" AND ")} AND (${orClauses})`
           : `WHERE ${orClauses}`;
@@ -501,28 +529,52 @@ router.get("/querymindr/search", async (req: Request, res: Response) => {
           .prepare(`SELECT * FROM file_index ${preFilterWhere} ORDER BY ${sortCol} ${order} LIMIT ${FUZZY_CAP}`)
           .all(...params, ...orParams) as FileRow[];
 
-        // If pre-filter yields nothing, fall back to a capped full-table scan
         if (candidates.length === 0) {
           candidates = db
             .prepare(`SELECT * FROM file_index ${where} ORDER BY ${sortCol} ${order} LIMIT ${FUZZY_CAP}`)
             .all(...params) as FileRow[];
         }
 
-        const fuse = new Fuse(candidates, { keys: ["name"], threshold: 0.4, includeScore: true, ignoreLocation: true });
-
-        // Match each word separately; keep only files that match ALL words
-        const wordSets = words.map((w) => {
-          const hits = fuse.search(w);
-          return new Set(hits.map((r) => (r.item as FileRow).id));
+        // Fuse searches both name and folder (weighted: name > folder)
+        const fuse = new Fuse(candidates, {
+          keys: [{ name: "name", weight: 0.75 }, { name: "folder", weight: 0.25 }],
+          threshold: 0.45,
+          includeScore: true,
+          ignoreLocation: true,
         });
-        const matchedIds = wordSets.reduce((acc, set) => new Set([...acc].filter((id) => set.has(id))));
 
-        // Preserve score ordering from the longest word's results
-        const longestWord = words.reduce((a, b) => (a.length >= b.length ? a : b));
-        const longestWordResults = fuse.search(longestWord);
-        allFiles = longestWordResults
-          .filter((r) => matchedIds.has((r.item as FileRow).id))
-          .map((r) => r.item as FileRow);
+        // For each original word, search all its stem variants and keep the
+        // best (lowest) score per file across all variants.
+        const wordScoreMaps: Map<number, number>[] = words.map((word) => {
+          const variants = getStems(word);
+          const bestScore = new Map<number, number>();
+          for (const variant of variants) {
+            for (const hit of fuse.search(variant)) {
+              const id = (hit.item as FileRow).id;
+              const sc = hit.score ?? 1;
+              if (!bestScore.has(id) || sc < bestScore.get(id)!) bestScore.set(id, sc);
+            }
+          }
+          return bestScore;
+        });
+
+        // Keep only files that matched every word (intersection)
+        const firstMap = wordScoreMaps[0];
+        const matchedIds = new Set(
+          [...firstMap.keys()].filter(id => wordScoreMaps.every(m => m.has(id)))
+        );
+
+        // Combined score = sum of per-word best scores; sort ascending (lower = better)
+        const idToCombinedScore = new Map<number, number>();
+        for (const id of matchedIds) {
+          idToCombinedScore.set(id, wordScoreMaps.reduce((sum, m) => sum + (m.get(id) ?? 1), 0));
+        }
+
+        const candidateById = new Map(candidates.map(f => [f.id, f]));
+        allFiles = [...matchedIds]
+          .sort((a, b) => (idToCombinedScore.get(a) ?? 1) - (idToCombinedScore.get(b) ?? 1))
+          .map(id => candidateById.get(id))
+          .filter((f): f is FileRow => f !== undefined);
       }
     } else {
       allFiles = db.prepare(`SELECT * FROM file_index ${where} ORDER BY ${sortCol} ${order}`).all(...params) as FileRow[];
