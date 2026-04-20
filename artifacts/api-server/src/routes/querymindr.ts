@@ -538,20 +538,45 @@ router.post("/querymindr/ai-search", async (req: Request, res: Response) => {
     // Fetch entire index — no limit so no files are silently excluded
     const allFiles = db.prepare(`SELECT id, path, name, extension, folder, size_bytes, modified_at, ai_summary FROM file_index ${where}`).all(...params) as FileRow[];
 
-    // Always pre-filter with fuzzy search so Claude only sees the most relevant candidates
+    // Pre-filter: run fuzzy search across full index so Claude only sees relevant candidates.
+    // Strategy: search by (a) full description and (b) each meaningful keyword individually,
+    // then merge. This prevents long phrases from scoring poorly against short filenames.
+    const STOPWORDS = new Set(["a","an","the","and","or","of","in","on","at","to","for",
+      "with","by","from","is","are","was","were","be","been","have","has","had","do","does",
+      "did","will","would","could","should","may","might","that","this","it","its","i",
+      "my","me","we","about","into","but","not","no","so","if","as","up","out","some",
+      "any","all","both","each","other","such","than","then","there","these","those",
+      "what","which","who","how","when","where","used","use","using"]);
+
+    const keywords = [...new Set(
+      description.toLowerCase().split(/\W+/).filter(w => w.length >= 3 && !STOPWORDS.has(w))
+    )];
+
     const fuse = new Fuse(allFiles, {
       keys: [
         { name: "name",       weight: 0.6 },
         { name: "folder",     weight: 0.25 },
         { name: "ai_summary", weight: 0.15 },
       ],
-      threshold: 0.5,
+      threshold: 0.4,
       includeScore: true,
     });
-    const fuzzyHits = fuse.search(description);
-    // If fuzzy found good candidates use top 300, otherwise fall back to first 300 by recency
-    const candidates: FileRow[] = fuzzyHits.length > 0
-      ? fuzzyHits.slice(0, 300).map((r) => r.item)
+
+    // Collect scored hits from full description + each individual keyword
+    const hitMap = new Map<number, { item: FileRow; score: number }>();
+    const addHits = (query: string, scoreBoost = 0) => {
+      fuse.search(query).forEach(r => {
+        const id = r.item.id;
+        const s = (r.score ?? 1) - scoreBoost;
+        if (!hitMap.has(id) || hitMap.get(id)!.score > s) hitMap.set(id, { item: r.item, score: s });
+      });
+    };
+    addHits(description);
+    keywords.forEach(kw => addHits(kw, 0.05)); // slight boost for keyword hits
+
+    const sorted = [...hitMap.values()].sort((a, b) => a.score - b.score);
+    const candidates: FileRow[] = sorted.length > 0
+      ? sorted.slice(0, 300).map(h => h.item)
       : allFiles.slice(0, 300);
 
     if (!client) {
