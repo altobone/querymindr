@@ -549,10 +549,11 @@ router.post("/querymindr/ai-search", async (req: Request, res: Response) => {
     const response = await client.messages.create({
       model: resolveModel(model),
       max_tokens: 1024,
-      messages: [{ role: "user", content: `You are a file search assistant. The user is looking for: "${description}"\n\nFile list (ID | name | extension | folder | summary):\n${fileList}\n\nReturn JSON with:\n- "ids": array of up to 20 matching file IDs, ordered by relevance\n- "explanation": one-sentence explanation\n\nReturn ONLY valid JSON.` }],
+      messages: [{ role: "user", content: `You are a file search assistant. The user is looking for: "${description}"\n\nFile list (ID | name | extension | folder | summary):\n${fileList}\n\nReturn a JSON object with:\n- "ids": array of up to 20 matching file IDs, ordered by relevance\n- "explanation": one-sentence explanation of what you found\n\nCRITICAL: respond with raw JSON only. No markdown, no code fences, no commentary — just the JSON object.` }],
     });
 
-    const text = response.content[0].type === "text" ? response.content[0].text : "{}";
+    const raw = response.content[0].type === "text" ? response.content[0].text : "{}";
+    const text = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
     let parsed: { ids?: number[]; explanation?: string } = {};
     try { parsed = JSON.parse(text); } catch { parsed = { ids: [], explanation: "Could not parse AI response." }; }
 
