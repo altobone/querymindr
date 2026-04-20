@@ -540,9 +540,23 @@ router.post("/querymindr/ai-search", async (req: Request, res: Response) => {
       "what","which","who","how","when","where","used","use","using","ago","years","year",
       "couple","few","some","just","get","find","looking","want","need","file","files"]);
 
-    const keywords = [...new Set(
+    const baseWords = [...new Set(
       description.toLowerCase().split(/\W+/).filter(w => w.length >= 3 && !STOPWORDS.has(w))
     )];
+
+    // Also add stemmed variants so "taxes" matches "Tax Documents", "documents" matches "document", etc.
+    function stems(w: string): string[] {
+      const variants = new Set([w]);
+      if (w.endsWith("ies") && w.length > 4) variants.add(w.slice(0, -3) + "y");
+      if (w.endsWith("ves") && w.length > 4) variants.add(w.slice(0, -3) + "f");
+      if (w.endsWith("es")  && w.length > 4) variants.add(w.slice(0, -2));
+      if (w.endsWith("s")   && w.length > 4) variants.add(w.slice(0, -1));
+      if (w.endsWith("ing") && w.length > 5) variants.add(w.slice(0, -3));
+      if (w.endsWith("ed")  && w.length > 4) variants.add(w.slice(0, -2));
+      if (w.endsWith("tion")&& w.length > 5) variants.add(w.slice(0, -4));
+      return [...variants];
+    }
+    const keywords = [...new Set(baseWords.flatMap(stems))];
 
     // Use SQL LIKE queries per keyword — much faster than loading all files into memory
     const folderClause = folder_scope ? "AND folder LIKE ?" : "";
