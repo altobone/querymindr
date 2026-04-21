@@ -47,3 +47,11 @@ Thumbs.db
 # Replit
 .cache/
 .local/
+
+# Querymindr built installers (large binaries — distribute separately)
+*.exe
+*.tar.gz
+*.pkg
+
+# Screenshots and attached assets (Replit chat attachments)
+attached_assets/
