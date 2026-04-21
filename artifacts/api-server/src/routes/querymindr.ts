@@ -140,10 +140,26 @@ async function runIndexing(rootDirs: string[], jobId: number) {
       absolute: true,
       onlyFiles: true,
       followSymbolicLinks: false,
-      ignore: ["**/node_modules/**", "**/.git/**", "**/.DS_Store", "**/.TemporaryItems/**", "**/.Spotlight-V100/**", "**/.fseventsd/**", "**/.Trashes/**"],
+      ignore: [
+        "**/node_modules/**", "**/.git/**", "**/.DS_Store",
+        "**/.TemporaryItems/**", "**/.Spotlight-V100/**", "**/.fseventsd/**", "**/.Trashes/**",
+        // Respect macOS .noindex convention (Spotlight skips these too)
+        "**/*.noindex/**", "**/*.noindex",
+        // Common app cache directories
+        "**/Disk Cache/**", "**/DiskCache/**", "**/GPUCache/**",
+        "**/Cache/**", "**/Caches/**",
+        "**/__pycache__/**", "**/.cache/**",
+      ],
       dot: false,
       suppressErrors: true,
     };
+
+    // Junk extensions never worth indexing — cache files, partial downloads, lock files
+    const JUNK_EXTENSIONS = new Set([
+      ".aecache", ".tmp", ".temp", ".cache", ".part", ".crdownload",
+      ".download", ".lock", ".lrprev", ".lrdata", ".imovielibrary",
+      ".aplibrary", ".photoslibrary",
+    ]);
 
     // Stream each root drive one at a time
     for (const rootDir of rootDirs) {
@@ -156,8 +172,13 @@ async function runIndexing(rootDirs: string[], jobId: number) {
           if (!stat.isFile()) continue;
 
           const ext = path.extname(filePath).toLowerCase();
+          if (JUNK_EXTENSIONS.has(ext)) continue;
+
           const name = path.basename(filePath);
           const folder = path.dirname(filePath);
+
+          // Belt-and-suspenders: skip .noindex paths even if glob missed them
+          if (filePath.includes(".noindex/") || filePath.includes(".noindex\\")) continue;
 
           let checksum: string | null = null;
           try {
@@ -221,7 +242,14 @@ async function runIncrementalIndexing(rootDirs: string[], jobId: number) {
         absolute: true,
         onlyDirectories: true,
         followSymbolicLinks: false,
-        ignore: ["**/node_modules/**", "**/.git/**", "**/.DS_Store", "**/.TemporaryItems/**", "**/.Spotlight-V100/**", "**/.fseventsd/**", "**/.Trashes/**"],
+        ignore: [
+          "**/node_modules/**", "**/.git/**", "**/.DS_Store",
+          "**/.TemporaryItems/**", "**/.Spotlight-V100/**", "**/.fseventsd/**", "**/.Trashes/**",
+          "**/*.noindex/**", "**/*.noindex",
+          "**/Disk Cache/**", "**/DiskCache/**", "**/GPUCache/**",
+          "**/Cache/**", "**/Caches/**",
+          "**/__pycache__/**", "**/.cache/**",
+        ],
         dot: false,
         suppressErrors: true,
       });
@@ -416,6 +444,14 @@ router.get("/querymindr/search", async (req: Request, res: Response) => {
 
     const conditions: string[] = [];
     const params: (string | number)[] = [];
+
+    // Always exclude junk — applies to all searches immediately, even before re-index
+    conditions.push("extension NOT IN ('.aecache','.tmp','.temp','.cache','.part','.crdownload','.download','.lock','.lrprev','.lrdata')");
+    conditions.push("path NOT LIKE '%.noindex/%'");
+    conditions.push("path NOT LIKE '%.noindex'");
+    conditions.push("folder NOT LIKE '%/Disk Cache/%'");
+    conditions.push("folder NOT LIKE '%/DiskCache/%'");
+    conditions.push("folder NOT LIKE '%/GPUCache/%'");
 
     if (effectiveTypes) {
       const extList = effectiveTypes.split(",").map((t) => t.trim().toLowerCase()).filter(Boolean).map((t) => (t.startsWith(".") ? t : "." + t));
