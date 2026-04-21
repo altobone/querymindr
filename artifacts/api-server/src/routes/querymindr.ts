@@ -458,15 +458,23 @@ router.get("/querymindr/search", async (req: Request, res: Response) => {
 
       if (exact.length > 0) {
         allFiles = exact.sort((a, b) => {
-          const aRank =
-            a.name.toLowerCase().includes(q.toLowerCase()) ? 0 :     // full phrase in name
-            words.every(w => a.name.toLowerCase().includes(w.toLowerCase())) ? 1 : // all words in name
-            2;                                                          // words split across name+folder
-          const bRank =
-            b.name.toLowerCase().includes(q.toLowerCase()) ? 0 :
-            words.every(w => b.name.toLowerCase().includes(w.toLowerCase())) ? 1 :
-            2;
-          return aRank - bRank;
+          // Ranking tiers (lower = better):
+          //   0 — full phrase is a whole word in the filename  ("Lake Lumber.jpg" for "lumber")
+          //   1 — every word is a whole word in the filename
+          //   2 — full phrase is a substring of the filename   ("slumber" contains "lumber")
+          //   3 — every word is a substring of the filename
+          //   4 — words found across name + folder path
+          const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+          const isWholeWord = (text: string, w: string) => new RegExp("\\b" + esc(w) + "\\b", "i").test(text);
+          const rankFile = (f: FileRow): number => {
+            const n = f.name;
+            if (isWholeWord(n, q)) return 0;
+            if (words.every(w => isWholeWord(n, w))) return 1;
+            if (n.toLowerCase().includes(q.toLowerCase())) return 2;
+            if (words.every(w => n.toLowerCase().includes(w.toLowerCase()))) return 3;
+            return 4;
+          };
+          return rankFile(a) - rankFile(b);
         });
       } else if (q.length >= 3) {
 
