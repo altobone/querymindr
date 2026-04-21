@@ -536,9 +536,16 @@ router.get("/querymindr/search", async (req: Request, res: Response) => {
         }
 
         // Fuse searches both name and folder (weighted: name > folder)
+        // threshold 0.3: tight enough to reject unrelated words that share a
+        // short substring (e.g. "volume" matching "lumber" via "lum") while
+        // still accepting single-character typos in typical filenames.
+        // minMatchCharLength: require at least 70% of the query word to match
+        // contiguously, which eliminates 3-gram false positives on short words.
+        const minMatch = Math.max(3, Math.ceil(q.length * 0.7));
         const fuse = new Fuse(candidates, {
           keys: [{ name: "name", weight: 0.75 }, { name: "folder", weight: 0.25 }],
-          threshold: 0.45,
+          threshold: 0.3,
+          minMatchCharLength: minMatch,
           includeScore: true,
           ignoreLocation: true,
         });
