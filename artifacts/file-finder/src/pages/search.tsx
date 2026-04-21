@@ -292,59 +292,6 @@ export default function SearchPage() {
 
         <ScrollArea className="flex-1 bg-background">
           <div className="p-6 space-y-6">
-            {/* Folder results */}
-            {folderResults.length > 0 && (
-              <div className="space-y-2">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                  <Folder className="w-3.5 h-3.5" />
-                  Folders ({folderResults.length})
-                </h3>
-                <div className="space-y-1">
-                  {folderResults.map((f) => {
-                    const parts = f.split("/");
-                    const name = parts[parts.length - 1] || f;
-                    const parent = parts.slice(0, -1).join("/");
-                    return (
-                      <div
-                        key={f}
-                        className="flex items-center justify-between p-3 rounded-lg border border-border bg-card hover:bg-secondary/50 transition-colors"
-                      >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="w-9 h-9 rounded bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
-                            <Folder className="w-4 h-4 text-primary" />
-                          </div>
-                          <div className="min-w-0">
-                            <p className="text-sm font-medium">{name}</p>
-                            <p className="text-xs text-muted-foreground font-mono truncate">{parent}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0 ml-4">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="gap-1.5"
-                            onClick={() => handleOpenInFinder(f)}
-                            title="Reveal in Finder"
-                          >
-                            <FolderOpen className="w-3.5 h-3.5" />
-                            Reveal
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="gap-1.5"
-                            onClick={() => handleBrowseFolder(f)}
-                          >
-                            Browse
-                          </Button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
             {/* Fuzzy match banner */}
             {!isLoading && (searchResults as { fuzzy?: boolean })?.fuzzy && files.length > 0 && (
               <div className="flex items-center gap-2 px-3 py-2 rounded-md text-xs" style={{ color: "#e8ff47", backgroundColor: "rgba(232,255,71,0.07)", border: "1px solid rgba(232,255,71,0.25)" }}>
@@ -411,6 +358,59 @@ export default function SearchPage() {
                     ))}
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* Folder results */}
+            {folderResults.length > 0 && (
+              <div className="space-y-2">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                  <Folder className="w-3.5 h-3.5" />
+                  Folders ({folderResults.length})
+                </h3>
+                <div className="space-y-1">
+                  {folderResults.map((f) => {
+                    const parts = f.split("/");
+                    const name = parts[parts.length - 1] || f;
+                    const parent = parts.slice(0, -1).join("/");
+                    return (
+                      <div
+                        key={f}
+                        className="flex items-center justify-between p-3 rounded-lg border border-border bg-card hover:bg-secondary/50 transition-colors"
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="w-9 h-9 rounded bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+                            <Folder className="w-4 h-4 text-primary" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium">{name}</p>
+                            <p className="text-xs text-muted-foreground font-mono truncate">{parent}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0 ml-4">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="gap-1.5"
+                            onClick={() => handleOpenInFinder(f)}
+                            title="Reveal in Finder"
+                          >
+                            <FolderOpen className="w-3.5 h-3.5" />
+                            Reveal
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="gap-1.5"
+                            onClick={() => handleBrowseFolder(f)}
+                          >
+                            Browse
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>
