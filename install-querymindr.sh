@@ -7,7 +7,7 @@ set -e
 # that starts automatically at login — no Terminal needed.
 # ---------------------------------------------------------------
 
-ROOT_DIR="${ROOT_DIR:-/Volumes/Thunderbay}"
+ROOT_DIR="${ROOT_DIR:-}"
 PORT="${PORT:-8080}"
 INSTALL_DIR="$HOME/.querymindr"
 PLIST_LABEL="com.musicsavvy.querymindr"
