@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { HardDrive, Activity, AlertTriangle, CheckCircle2, KeyRound, Eye, EyeOff, Zap, RefreshCw, Clock, Database, Plus, X, ShieldCheck, ShoppingCart, Loader2 } from "lucide-react";
+import { HardDrive, Activity, AlertTriangle, CheckCircle2, Zap, RefreshCw, Clock, Database, Plus, X } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -27,12 +27,6 @@ const CHECKSUM_OPTIONS = [
   { value: "1000", label: "1 GB",   description: "Thorough — slower on very large files" },
 ];
 
-interface LicenseStatus {
-  licensed: boolean;
-  daysRemaining: number;
-  installDate: string;
-}
-
 export default function SettingsPage() {
   const [rootDirs, setRootDirs] = useState<string[]>([]);
   const [newDirInput, setNewDirInput] = useState("");
@@ -40,10 +34,6 @@ export default function SettingsPage() {
   const [checksumLimit, setChecksumLimit] = useState("100");
   const { toast } = useToast();
 
-  const [licenseStatus, setLicenseStatus] = useState<LicenseStatus | null>(null);
-  const [licenseKey, setLicenseKey] = useState("");
-  const [activatingKey, setActivatingKey] = useState(false);
-  const [showLicenseKey, setShowLicenseKey] = useState(false);
 
   useEffect(() => {
     fetch("/api/querymindr/app-config")
@@ -55,39 +45,7 @@ export default function SettingsPage() {
       })
       .catch(() => {});
 
-    fetch("/api/querymindr/license/status")
-      .then((r) => r.json())
-      .then((d) => setLicenseStatus(d as LicenseStatus))
-      .catch(() => {});
   }, []);
-
-  const handleActivateLicense = async () => {
-    if (!licenseKey.trim()) return;
-    setActivatingKey(true);
-    try {
-      const res = await fetch("/api/querymindr/license/activate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ key: licenseKey.trim() }),
-      });
-      const data = await res.json() as { ok: boolean; message: string };
-      if (data.ok) {
-        toast({ title: "License Activated", description: data.message });
-        setLicenseKey("");
-        // Re-fetch status
-        fetch("/api/querymindr/license/status")
-          .then(r => r.json())
-          .then(d => setLicenseStatus(d as LicenseStatus))
-          .catch(() => {});
-      } else {
-        toast({ title: "Invalid Key", description: data.message, variant: "destructive" });
-      }
-    } catch {
-      toast({ title: "Error", description: "Could not connect to server.", variant: "destructive" });
-    } finally {
-      setActivatingKey(false);
-    }
-  };
 
   const saveAppConfig = async (patch: { auto_index_interval_hours?: number; checksum_limit_mb?: number; root_dirs?: string[] }) => {
     try {
@@ -200,76 +158,6 @@ export default function SettingsPage() {
 
       <ScrollArea className="flex-1 p-6">
         <div className="max-w-3xl space-y-8 pb-10">
-
-          {/* License status card */}
-          {licenseStatus && (
-            <Card className={licenseStatus.licensed ? "border-green-700/40" : licenseStatus.daysRemaining <= 2 ? "border-amber-700/40" : ""}>
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  {licenseStatus.licensed
-                    ? <ShieldCheck className="w-5 h-5 text-green-400" />
-                    : <KeyRound className="w-5 h-5" style={{ color: "#e8ff47" }} />}
-                  {licenseStatus.licensed ? "Licensed" : "Trial Version"}
-                </CardTitle>
-                <CardDescription>
-                  {licenseStatus.licensed
-                    ? "Querymindr is fully licensed. Thank you!"
-                    : licenseStatus.daysRemaining === 0
-                    ? "Your trial has ended. Enter your license key below to continue."
-                    : licenseStatus.daysRemaining === 1
-                    ? "1 day remaining in your free trial."
-                    : `${licenseStatus.daysRemaining} days remaining in your free trial.`}
-                </CardDescription>
-              </CardHeader>
-              {!licenseStatus.licensed && (
-                <CardContent className="space-y-3">
-                  <div className="flex gap-2">
-                    <div className="relative flex-1">
-                      <Input
-                        placeholder="QMDR-XXXX-XXXX-XXXX-XXXX"
-                        value={showLicenseKey ? licenseKey : licenseKey ? licenseKey.replace(/[^-]/g, "•") : ""}
-                        onChange={e => setLicenseKey(e.target.value.replace(/•/g, "").toUpperCase())}
-                        onFocus={() => setShowLicenseKey(true)}
-                        onBlur={() => setShowLicenseKey(false)}
-                        onKeyDown={e => e.key === "Enter" && handleActivateLicense()}
-                        className="font-mono tracking-widest pr-10 placeholder:tracking-normal placeholder:font-sans"
-                        disabled={activatingKey}
-                      />
-                      <button
-                        type="button"
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                        onClick={() => setShowLicenseKey(v => !v)}
-                      >
-                        {showLicenseKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
-                    </div>
-                    <Button
-                      onClick={handleActivateLicense}
-                      disabled={!licenseKey.trim() || activatingKey}
-                    >
-                      {activatingKey
-                        ? <><Loader2 className="w-4 h-4 mr-1.5 animate-spin" />Activating…</>
-                        : <><KeyRound className="w-4 h-4 mr-1.5" />Activate</>}
-                    </Button>
-                  </div>
-                  <div className="flex items-center justify-between pt-1">
-                    <p className="text-xs text-muted-foreground">
-                      Don't have a key?{" "}
-                      <a
-                        href="https://musicsavvy.com/querymindr"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-indigo-400 hover:underline"
-                      >
-                        Buy Querymindr — $29
-                      </a>
-                    </p>
-                    <ShoppingCart className="w-3.5 h-3.5 text-muted-foreground" />
-                  </div>
-                </CardContent>
-              )}
-            </Card>
-          )}
 
           <Card>
             <CardHeader>

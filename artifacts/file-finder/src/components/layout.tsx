@@ -1,15 +1,9 @@
 import { Link, useLocation } from "wouter";
-import { Search, Copy, Settings, HelpCircle, Clock, KeyRound, CheckCircle2 } from "lucide-react";
+import { Search, Copy, Settings, HelpCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import logo from "@assets/Queryminder-logo_white_1776223766599.png";
 
-interface LicenseStatus {
-  licensed: boolean;
-  daysRemaining: number;
-  installDate: string;
-}
-
-export default function Layout({ children, licenseStatus }: { children: React.ReactNode; licenseStatus?: LicenseStatus | null }) {
+export default function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
 
   const navItems = [
@@ -18,10 +12,6 @@ export default function Layout({ children, licenseStatus }: { children: React.Re
     { name: "Settings", href: "/settings", icon: Settings },
     { name: "Help", href: "/help", icon: HelpCircle },
   ];
-
-  const showTrialBadge = licenseStatus && !licenseStatus.licensed;
-  const days = licenseStatus?.daysRemaining ?? 0;
-  const urgent = !licenseStatus?.licensed && days <= 2;
 
   return (
     <div className="flex h-screen w-full bg-background overflow-hidden selection:bg-primary selection:text-primary-foreground">
@@ -55,13 +45,7 @@ export default function Layout({ children, licenseStatus }: { children: React.Re
             })}
           </nav>
 
-          {/* License / trial status badge */}
-          {licenseStatus?.licensed ? (
-            <div className="px-4 pb-4">
-              <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-green-950/40 border border-green-800/30 text-green-400 text-xs">
-                <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
-                <span className="font-medium">Licensed</span>
-              </div>
+        </div>
             </div>
           ) : showTrialBadge ? (
             <div className="px-4 pb-4">
