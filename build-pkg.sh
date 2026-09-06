@@ -122,7 +122,7 @@ set -e
 SRC_DIR="/usr/local/lib/querymindr"
 NODE_BIN="$SRC_DIR/node"
 PORT="8080"
-ROOT_DIR="/Volumes/Thunderbay"
+ROOT_DIR=""
 PLIST_LABEL="com.musicsavvy.querymindr"
 MENUBAR_PLIST_LABEL="com.musicsavvy.querymindr.menubar"
 
