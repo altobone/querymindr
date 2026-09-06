@@ -26,8 +26,7 @@ interface AppConfig {
 
 function getRootDirs(): string[] {
   const saved = readConfigFile().root_dirs;
-  if (saved && saved.length > 0) return saved;
-  return [ROOT_DIR];
+  return saved ?? [];
 }
 
 function rootDirsLabel(dirs: string[]): string {
