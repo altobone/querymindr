@@ -129,7 +129,7 @@ export default function HelpPage() {
                   </div>
                 </div>
                 <p className="text-sm text-muted-foreground leading-relaxed pl-10">
-                  Go to <strong className="text-foreground">Settings → Index Engine</strong> and confirm your drive path (e.g. <code className="bg-secondary px-1.5 py-0.5 rounded text-xs">/Volumes/Thunderbay</code>) is listed. Add more folders if needed.
+                  Go to <strong className="text-foreground">Settings → Index Engine</strong> and confirm your drive path (e.g. <code className="bg-secondary px-1.5 py-0.5 rounded text-xs">/Volumes/MyDrive</code>) is listed. Add more folders if needed.
                 </p>
               </div>
 

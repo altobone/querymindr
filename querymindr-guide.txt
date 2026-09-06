@@ -1,66 +1,121 @@
-Querymindr — Installation & Setup Guide
+QUERYMINDR — USER GUIDE
+=======================
 
-Before You Start (Both Mac & Linux)
-You'll need Node.js and pnpm installed. Do this once:
-Download and install Node.js from nodejs.org (choose the LTS version)
-Open Terminal and run:
-npm install -g pnpm
-Your external drive must be connected and mounted before running the installer.
+What is Querymindr?
 
-Mac Installation
-Optional but recommended — adds a menu bar icon:
-xcode-select --install
-Follow the prompt if it appears. Skip this if you already have Xcode installed.
-Install Querymindr:
-Download querymindr-release.tar.gz into your Downloads folder
-Open Terminal and run:
-cd ~/Downloads && tar -xzf querymindr-release.tar.gz && cd querymindr-release && bash install-querymindr.sh
-The installer runs, then opens Querymindr in your browser automatically
-That's it. Querymindr runs silently in the background and starts automatically every time you log in — no Terminal needed after this.
-A magnifying glass icon appears in your menu bar. Click it to open the app or run a Quick Update at any time.
+Querymindr is a local file-search tool designed for large external drives and folders. It indexes your files locally on your Mac so you can quickly search for files and identify duplicates.
 
-Linux Installation
-Download querymindr-release.tar.gz into your home folder
-Open Terminal and run, replacing the path with your actual drive location:
-cd ~ && tar -xzf querymindr-release.tar.gz && cd querymindr-release && ROOT_DIR=/media/yourname/drivename bash install-querymindr-linux.sh
-The installer runs, then opens Querymindr in your browser automatically
-Querymindr runs as a background service and starts automatically at every login.
-Useful commands:
-systemctl --user status file-finder    # check if it's running
-systemctl --user stop file-finder      # stop it
-systemctl --user start file-finder     # start it again
-journalctl --user -u file-finder -f    # view live logs
+Querymindr is free to use. There is no subscription and no license key.
 
-Opening Querymindr
-Once installed, open your browser and go to:
-http://localhost:8080/file-finder/
-Bookmark this — it's your app. It only works on your own computer; it is not accessible from the internet.
+COMPATIBILITY
+-------------
 
-First-Time Setup (Settings Page)
-Click Settings in the left sidebar.
-1. Claude API Key
-Querymindr uses Claude AI for natural language search. You need an API key from Anthropic:
-Go to console.anthropic.com, sign up, and create an API key
-Paste it into the Claude API Key field and click Save Key
-Without this, keyword search still works — only AI search requires it
-2. AI Model
-Claude Haiku — faster and cheaper, great for most searches
-Claude Sonnet — more powerful, better for complex or vague queries
-3. Auto-Update Schedule
-Controls how often Querymindr automatically scans for new or changed files in the background:
-Disabled — never runs automatically; use the buttons manually
-Every hour — keeps the index very current
-Every 12 hours — the default (runs at midnight and noon)
-Every 24 hours — once a day
-4. Checksum File Size Limit
-Controls which files get fingerprinted for duplicate detection. Larger limits catch more duplicates but take longer to index:
-100 MB — default, covers most audio tracks
-250 MB — covers stems and rendered mixes
-500 MB — covers most video exports
-5. Index Engine — Building Your Index
-Point Querymindr to your drives and build the searchable database:
-Root Directories — add one or more drive paths. Click + (or press Enter) to add a path, and X to remove one. You can index multiple external drives at the same time.
-Quick Update — scans only folders that changed recently across all your drives. Finishes in minutes. Use this regularly.
-Full Re-index — scans every file from scratch across all drives. Takes several hours. Use only after a major reorganization of your drive.
-The index must complete at least once before search and duplicate detection are available.
-A progress bar shows percentage complete during both Quick Update and Full Re-index.
+Querymindr currently runs on macOS.
+
+Your files and search index remain on your Mac. Querymindr does not require a cloud account or remote search service.
+
+INSTALLATION
+------------
+
+Install Querymindr using the provided Mac installer package (.pkg).
+
+The installer sets up the Querymindr background service and starts it automatically when you log in.
+
+You do not need to install Node.js or use Terminal to run Querymindr.
+
+After installation, Querymindr opens automatically in your web browser at:
+
+http://localhost:8080/querymindr/
+
+The Querymindr menu-bar application is optional. If it is not installed automatically, Xcode Command Line Tools may be required to build it.
+
+FIRST SETUP
+-----------
+
+1. Open Querymindr.
+
+2. Go to Settings → Index Engine.
+
+3. Add the drives or folders you want Querymindr to search.
+
+   External drives must be connected and mounted before they can be indexed.
+
+4. Click Quick Update.
+
+Querymindr will index the selected locations in the background. You can continue using your Mac while indexing is in progress.
+
+The initial index may take some time, particularly for a large external drive.
+
+SEARCHING
+---------
+
+Once indexing is complete, use the main search page to find files.
+
+Search supports normal keyword and fuzzy matching, making it useful even when you do not remember the exact filename.
+
+DUPLICATE DETECTION
+-------------------
+
+Querymindr can identify duplicate files within the indexed locations.
+
+For reliable duplicate results, allow the initial indexing operation to finish before relying on duplicate detection.
+
+INDEX UPDATES
+-------------
+
+Quick Update checks the indexed locations for changes and updates the index without rebuilding everything from scratch.
+
+Use Quick Update periodically to keep the index current.
+
+FULL RE-INDEX
+-------------
+
+Use Full Re-index when you want to rebuild the index from scratch.
+
+This can be useful after major changes to the indexed folders or if you believe the index no longer accurately reflects the files on your drives.
+
+AUTOMATIC UPDATES
+-----------------
+
+Querymindr can update the index automatically according to its configured schedule.
+
+You can manage indexing behavior from Settings → Index Engine.
+
+OPTIONAL AI FEATURES
+--------------------
+
+Querymindr's core file search works without AI.
+
+Optional AI features can use the Anthropic API to provide additional file summaries and related functionality.
+
+If you enable AI features, Querymindr sends the information required for those AI requests to Anthropic. Your use of the Anthropic API is subject to Anthropic's policies and terms.
+
+PRIVACY
+-------
+
+Querymindr is designed around local file search.
+
+Your files are indexed locally on your Mac. The Querymindr interface is served locally and is accessed through localhost.
+
+Querymindr does not require you to upload your files to a Querymindr cloud service.
+
+If you enable optional AI features, information associated with those requests is sent to Anthropic as described above.
+
+TROUBLESHOOTING
+---------------
+
+Querymindr does not find my files
+    Open Settings → Index Engine and confirm that the correct drive or folders have been added. Make sure external drives are connected and mounted.
+
+Search returns no results
+    Confirm that indexing has completed. If necessary, run Quick Update.
+
+The index seems incorrect
+    Try Quick Update first. If the problem persists, use Full Re-index.
+
+Querymindr does not open
+    Make sure the Querymindr background service is running and try opening:
+
+    http://localhost:8080/querymindr/
+
+If you still have a problem, check the Querymindr installation and service status.

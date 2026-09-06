@@ -33,7 +33,7 @@ echo ""
 # Verify drive exists
 if [ ! -d "$ROOT_DIR" ]; then
   echo "ERROR: Drive not found at $ROOT_DIR"
-  echo "Make sure your Thunderbay drive is connected and try again."
+  echo "Make sure the drive you want to index is connected and mounted, then try again."
   exit 1
 fi
 

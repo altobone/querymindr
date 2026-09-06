@@ -20,7 +20,6 @@ echo ""
 cd "$SCRIPT_DIR"
 
 echo "0/4  Removing prior installer files..."
-rm -f "$SCRIPT_DIR"/Querymindr-install-windows*.exe \
       "$SCRIPT_DIR"/querymindr-release*.tar.gz
 echo "     Done."
 

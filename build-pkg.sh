@@ -359,7 +359,7 @@ cat > "$STAGING/resources/readme.html" << 'READMEHTML'
     <li>To restart: <code>launchctl load ~/Library/LaunchAgents/com.musicsavvy.querymindr.plist</code></li>
   </ul>
   <h2>Your drive path</h2>
-  <p>Querymindr defaults to <code>/Volumes/Thunderbay</code>. To change it, open the app and go to <strong>Settings → Index Engine</strong>.</p>
+  <p>Querymindr does not select a default drive. Open the app and go to <strong>Settings → Index Engine</strong> to add the drive or folders you want to index.</p>
 </body>
 </html>
 READMEHTML

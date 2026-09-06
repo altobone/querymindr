@@ -60,7 +60,6 @@ export default function SettingsPage() {
   };
 
   const handleAddDrive = () => {
-    // Strip surrounding quotes Windows adds when copying a path via right-click
     const trimmed = newDirInput.trim().replace(/^["']+|["']+$/g, "").trim();
     if (!trimmed || rootDirs.includes(trimmed)) return;
     const updated = [...rootDirs, trimmed];
