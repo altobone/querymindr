@@ -70,8 +70,4 @@ Contributions, bug reports, and suggestions are welcome.
 
 ## License
 
-See the repository license file for the terms under which Querymindr is distributed.
-
-## License
-
-Querymindr is released under the [MIT License](LICENSE).
+Querymindr is released under the [GNU General Public License v3.0](LICENSE).
