@@ -1,7 +1,6 @@
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Database, Search, ArrowRight, X } from "lucide-react";
-import logo from "@assets/Queryminder-logo_white_1776223766599.png";
 
 const WELCOME_KEY = "querymindr_welcomed";
 
@@ -37,7 +36,7 @@ export default function WelcomeScreen({ onDismiss }: WelcomeScreenProps) {
 
         {/* Header */}
         <div className="px-8 pt-8 pb-6 border-b border-border/50 text-center">
-          <img src={logo} alt="Querymindr" className="h-7 w-auto mx-auto mb-5" />
+          <div className="text-2xl font-semibold">Querymindr</div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground mb-2">
             Welcome to Querymindr
           </h1>

@@ -1,7 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { Search, Copy, Settings, HelpCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import logo from "@assets/Queryminder-logo_white_1776223766599.png";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
@@ -15,17 +14,21 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex h-screen w-full bg-background overflow-hidden selection:bg-primary selection:text-primary-foreground">
-      <div className="w-64 border-r border-border bg-card flex flex-col justify-between flex-shrink-0">
+      <div className="w-64 border-r border-border bg-card flex flex-col flex-shrink-0">
         <div className="flex flex-col h-full">
           <div className="px-6 py-5 border-b border-border/50">
-            <img src={logo} alt="Querymindr" className="h-7 w-auto" />
+            <div className="text-xl font-semibold tracking-tight">Querymindr</div>
           </div>
 
           <nav className="flex-1 px-3 py-6 space-y-1 overflow-y-auto">
-            <div className="text-xs font-medium text-muted-foreground px-3 mb-3 uppercase tracking-wider">Menu</div>
+            <div className="text-xs font-medium text-muted-foreground px-3 mb-3 uppercase tracking-wider">
+              Menu
+            </div>
+
             {navItems.map((item) => {
               const isActive = location === item.href;
               const Icon = item.icon;
+
               return (
                 <Link
                   key={item.name}
@@ -38,38 +41,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   )}
                   style={isActive ? { color: "#e8ff47" } : undefined}
                 >
-                  <Icon className="w-4 h-4" style={isActive ? { color: "#e8ff47" } : undefined} />
+                  <Icon
+                    className="w-4 h-4"
+                    style={isActive ? { color: "#e8ff47" } : undefined}
+                  />
                   {item.name}
                 </Link>
               );
             })}
           </nav>
-
-        </div>
-            </div>
-          ) : showTrialBadge ? (
-            <div className="px-4 pb-4">
-              <Link
-                href="/settings"
-                className={cn(
-                  "flex items-center gap-2 px-3 py-2 rounded-md border text-xs transition-colors",
-                  urgent
-                    ? "bg-amber-950/40 border-amber-700/40 text-amber-400 hover:bg-amber-950/60"
-                    : "bg-indigo-950/40 border-indigo-700/30 text-indigo-400 hover:bg-indigo-950/60"
-                )}
-              >
-                <Clock className="w-3.5 h-3.5 shrink-0" />
-                <span>
-                  {days === 0
-                    ? "Trial expires today"
-                    : days === 1
-                    ? "1 day left in trial"
-                    : `${days} days left in trial`}
-                </span>
-                <KeyRound className="w-3 h-3 ml-auto shrink-0 opacity-60" />
-              </Link>
-            </div>
-          ) : null}
         </div>
       </div>
 

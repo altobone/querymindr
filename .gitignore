@@ -55,3 +55,6 @@ Thumbs.db
 
 # Screenshots and attached assets (Replit chat attachments)
 attached_assets/
+
+# Generated release artifacts
+querymindr-release/
