@@ -18,7 +18,6 @@
     --text-muted: #666;
     --text-dim: #999;
     --mac: #ff9500;
-    --linux: #47d4ff;
     --radius: 6px;
   }
 
@@ -148,7 +147,6 @@
   }
 
   .tag-mac { color: var(--mac); }
-  .tag-linux { color: var(--linux); }
   .tag-both { color: var(--accent); }
 
   .dot {
@@ -159,7 +157,6 @@
   }
 
   .dot-mac { background: var(--mac); }
-  .dot-linux { background: var(--linux); }
   .dot-both { background: var(--accent); }
 
   /* ── Feature grid ── */
@@ -220,7 +217,7 @@
   .badge-ai {
     background: rgba(71,212,255,0.08);
     border: 1px solid rgba(71,212,255,0.18);
-    color: var(--linux);
+    color: var(--accent2);
   }
 
   /* ── Steps ── */
@@ -282,10 +279,6 @@
     line-height: 1.7;
   }
 
-  .qm-code.linux {
-    border-left-color: var(--linux);
-    color: #9dd5f0;
-  }
 
   /* ── Inline code ── */
   code {
@@ -510,7 +503,7 @@
   }
 
   .qm-commands td:first-child {
-    color: var(--linux);
+    color: var(--accent2);
     white-space: pre;
     width: 52%;
     background: rgba(71, 212, 255, 0.04);
@@ -584,7 +577,7 @@
     <div class="qm-wordmark">Querymindr</div>
     <h1 class="qm-title">Installation &amp;<br>User Guide</h1>
     <p class="qm-intro">Querymindr is a local search tool for large external drives. It indexes every file on your drive — names, folders, sizes, and types — into a fast database that lives on your Mac. You search it through a browser window: type a word, a partial title, or a rough description, and Querymindr finds the matching files in seconds, no matter how many terabytes you have. Because everything runs on your own machine, your files never leave your computer.</p>
-    <p class="qm-subtitle">// mac · linux · local file search + optional ai</p>
+    <p class="qm-subtitle">// macOS · local file search + optional ai</p>
   </div>
 
   <!-- What you can do -->
@@ -641,84 +634,107 @@
   <div class="qm-divider"></div>
 
   <!-- Before you start -->
+
   <div class="qm-section reveal">
+
     <div class="qm-section-label">Prerequisites</div>
+
     <div class="qm-section-title">Before You Start</div>
+
     <div class="qm-card">
-      <div class="qm-card-title"><span class="dot dot-both"></span><span class="tag-both">Mac &amp; Linux</span></div>
+
+      <div class="qm-card-title"><span class="dot dot-mac"></span><span class="tag-mac">macOS</span></div>
+
       <div class="qm-steps">
+
         <div class="qm-step">
+
           <div class="qm-step-num">1</div>
-          <div class="qm-step-body">Download and install <strong>Node.js</strong> from <code>nodejs.org</code> — choose the <strong>LTS</strong> version.</div>
+
+          <div class="qm-step-body">Download the latest <strong>Querymindr installer</strong> from the GitHub Releases page.</div>
+
         </div>
+
         <div class="qm-step">
+
           <div class="qm-step-num">2</div>
-          <div class="qm-step-body">Open Terminal and install <strong>pnpm</strong>:<div class="qm-code">npm install -g pnpm</div></div>
+
+          <div class="qm-step-body">Open the downloaded <strong>Querymindr-install-mac.pkg</strong> and follow the installer instructions.</div>
+
         </div>
+
         <div class="qm-step">
+
           <div class="qm-step-num">3</div>
-          <div class="qm-step-body"><strong>Connect and mount your external drive</strong> before running the installer.</div>
+
+          <div class="qm-step-body"><strong>Connect and mount your external drive</strong> before configuring the index.</div>
+
         </div>
+
       </div>
+
     </div>
+
   </div>
 
   <!-- OS Installation -->
-  <div class="qm-section reveal">
-    <div class="qm-section-label">Installation</div>
-    <div class="qm-section-title">Platform Setup</div>
-    <div class="qm-os-grid">
 
-      <!-- Mac -->
-      <div class="qm-card">
-        <div class="qm-card-title"><span class="dot dot-mac"></span><span class="tag-mac">macOS</span></div>
-        <div class="qm-steps">
-          <div class="qm-step">
-            <div class="qm-step-num" style="color:var(--mac);background:rgba(255,149,0,0.07);border-color:rgba(255,149,0,0.15);">1</div>
-            <div class="qm-step-body"><strong>Optional:</strong> Install Xcode command-line tools for the menu bar icon:<div class="qm-code" style="border-left-color:var(--mac);color:#f0c080;">xcode-select --install</div>Skip if Xcode is already installed.</div>
-          </div>
-          <div class="qm-step">
-            <div class="qm-step-num" style="color:var(--mac);background:rgba(255,149,0,0.07);border-color:rgba(255,149,0,0.15);">2</div>
-            <div class="qm-step-body">Place <code>querymindr-release.tar.gz</code> in your <strong>Downloads</strong> folder.</div>
-          </div>
-          <div class="qm-step">
-            <div class="qm-step-num" style="color:var(--mac);background:rgba(255,149,0,0.07);border-color:rgba(255,149,0,0.15);">3</div>
-            <div class="qm-step-body">Run in Terminal:<div class="qm-code" style="border-left-color:var(--mac);color:#f0c080;">cd ~/Downloads && tar -xzf querymindr-release.tar.gz && cd querymindr-release && bash install-querymindr.sh</div></div>
-          </div>
+  <div class="qm-section reveal">
+
+    <div class="qm-section-label">Installation</div>
+
+    <div class="qm-section-title">Getting Started</div>
+
+    <div class="qm-card">
+
+      <div class="qm-card-title"><span class="dot dot-mac"></span><span class="tag-mac">macOS</span></div>
+
+      <div class="qm-steps">
+
+        <div class="qm-step">
+
+          <div class="qm-step-num" style="color:var(--mac);background:rgba(255,149,0,0.07);border-color:rgba(255,149,0,0.15);">1</div>
+
+          <div class="qm-step-body">After installation, Querymindr opens automatically in your browser.</div>
+
         </div>
-        <div class="qm-note" style="border-color:rgba(255,149,0,0.15);background:rgba(255,149,0,0.04);">
-          <span class="qm-note-icon" style="color:var(--mac);">⌘</span>
-          <span>After install, Querymindr opens in your browser automatically and starts at every login. A <strong>magnifying glass icon</strong> appears in your menu bar.</span>
+
+        <div class="qm-step">
+
+          <div class="qm-step-num" style="color:var(--mac);background:rgba(255,149,0,0.07);border-color:rgba(255,149,0,0.15);">2</div>
+
+          <div class="qm-step-body">Open <strong>Settings → Index Engine</strong> and add the external drive or folders you want Querymindr to index.</div>
+
         </div>
+
+        <div class="qm-step">
+
+          <div class="qm-step-num" style="color:var(--mac);background:rgba(255,149,0,0.07);border-color:rgba(255,149,0,0.15);">3</div>
+
+          <div class="qm-step-body">Run <strong>Quick Update</strong> to build or update the search index.</div>
+
+        </div>
+
+        <div class="qm-step">
+
+          <div class="qm-step-num" style="color:var(--mac);background:rgba(255,149,0,0.07);border-color:rgba(255,149,0,0.15);">4</div>
+
+          <div class="qm-step-body">Go to <strong>Search</strong> and start searching your files.</div>
+
+        </div>
+
       </div>
 
-      <!-- Linux -->
-      <div class="qm-card">
-        <div class="qm-card-title"><span class="dot dot-linux"></span><span class="tag-linux">Linux</span></div>
-        <div class="qm-steps">
-          <div class="qm-step">
-            <div class="qm-step-num" style="color:var(--linux);background:rgba(71,212,255,0.07);border-color:rgba(71,212,255,0.15);">1</div>
-            <div class="qm-step-body">Place <code>querymindr-release.tar.gz</code> in your <strong>home folder</strong>.</div>
-          </div>
-          <div class="qm-step">
-            <div class="qm-step-num" style="color:var(--linux);background:rgba(71,212,255,0.07);border-color:rgba(71,212,255,0.15);">2</div>
-            <div class="qm-step-body">Run in Terminal — replace the path with your actual drive location:<div class="qm-code linux">cd ~ && tar -xzf querymindr-release.tar.gz && cd querymindr-release && ROOT_DIR=/media/yourname/drivename bash install-querymindr-linux.sh</div></div>
-          </div>
-        </div>
-        <div class="qm-note" style="border-color:rgba(71,212,255,0.12);background:rgba(71,212,255,0.04);">
-          <span class="qm-note-icon" style="color:var(--linux);">ℹ</span>
-          <span>Runs as a background service that starts automatically at login.</span>
-        </div>
-        <p style="font-size:13px;color:var(--text-muted);margin-top:14px;margin-bottom:8px;font-weight:600;">Useful commands</p>
-        <table class="qm-commands">
-          <tr><td>systemctl --user status querymindr</td><td>Check if running</td></tr>
-          <tr><td>systemctl --user stop querymindr</td><td>Stop the service</td></tr>
-          <tr><td>systemctl --user start querymindr</td><td>Start it again</td></tr>
-          <tr><td>journalctl --user -u querymindr -f</td><td>View live logs</td></tr>
-        </table>
+      <div class="qm-note" style="border-color:rgba(255,149,0,0.15);background:rgba(255,149,0,0.04);">
+
+        <span class="qm-note-icon" style="color:var(--mac);">⌘</span>
+
+        <span>Querymindr runs locally on your Mac. Your files remain on your computer.</span>
+
       </div>
 
     </div>
+
   </div>
 
   <!-- Opening the app -->
@@ -943,7 +959,7 @@
         </div>
         <div class="qm-step">
           <div class="qm-step-num">→</div>
-          <div class="qm-step-body"><strong>AI File Summary</strong> <span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--linux);">requires API key</span> — generates a short description of what the file likely contains based on its name, location, and type. The summary is saved so it only needs to be generated once per file.</div>
+          <div class="qm-step-body"><strong>AI File Summary</strong> <span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text-muted);">requires API key</span> — generates a short description of what the file likely contains based on its name, location, and type. The summary is saved so it only needs to be generated once per file.</div>
         </div>
       </div>
     </div>
