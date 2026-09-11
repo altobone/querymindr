@@ -1,0 +1,1472 @@
+/**
+ * Housemagik public styles — North Valley palette from mynorthvalleyhome.com
+ * Brand gold #847252, Lato, square chrome, white listing cards.
+ */
+
+.housemajik-container,
+.housemajik-detail {
+	--hm-brand: #847252;
+	--hm-brand-dark: #6d5e43;
+	--hm-ink: #1a1a1a;
+	--hm-text: #555555;
+	--hm-muted: #666666;
+	--hm-paper: #f9f9f9;
+	--hm-white: #ffffff;
+	--hm-line: #bbbbbb;
+	--hm-hair: #e6e6e6;
+	--hm-focus: #847252;
+}
+
+.housemajik-container {
+	max-width: 920px;
+	margin: 0 auto;
+	font-family: Lato, "Helvetica Neue", Helvetica, Arial, sans-serif;
+	color: var(--hm-text);
+	line-height: 1.65;
+	-webkit-font-smoothing: antialiased;
+}
+
+.housemajik-container ::selection,
+.housemajik-detail ::selection {
+	background: var(--hm-brand);
+	color: var(--hm-white);
+}
+
+.housemajik-search-form {
+	background: var(--hm-ink);
+	padding: 2.5rem 3.25rem 2.15rem;
+	border-radius: 0;
+	box-shadow: none;
+}
+
+.housemajik-header {
+	text-align: center;
+	margin: 0 0 2rem;
+}
+
+.housemajik-header-logo {
+	display: block;
+	width: 200px;
+	height: auto;
+	max-width: 100%;
+	margin: 0 auto 1.15rem;
+}
+
+.housemajik-header h2 {
+	margin: 0 0 0.85rem;
+	font-size: clamp(1.55rem, 3.6vw, 2.15rem);
+	font-weight: 300;
+	letter-spacing: 0.16em;
+	text-transform: uppercase;
+	color: var(--hm-white);
+	line-height: 1.3;
+}
+
+.housemajik-welcome {
+	margin: -0.25rem 0 0.85rem;
+	font-size: 0.95rem;
+	font-weight: 400;
+	letter-spacing: 0.04em;
+	text-transform: none;
+	color: #d4c4a0;
+}
+
+.housemajik-form {
+	background: transparent;
+	padding: 0;
+	border-radius: 0;
+	box-shadow: none;
+}
+
+.housemajik-field {
+	margin-bottom: 1.35rem;
+}
+
+.housemajik-container .housemajik-field label {
+	display: block;
+	margin: 0 0 0.55rem;
+	height: auto;
+	overflow: visible;
+	font-weight: 700;
+	font-size: 0.6875rem;
+	letter-spacing: 0.16em;
+	text-transform: uppercase;
+	line-height: 1.4;
+	color: var(--hm-white);
+}
+
+.housemajik-container .housemajik-land-field {
+	margin-bottom: 1.25rem;
+}
+
+.housemajik-container .housemajik-land-field label {
+	display: flex;
+	align-items: flex-start;
+	gap: 0.55rem;
+	margin: 0;
+	font-size: 1rem;
+	font-weight: 400;
+	letter-spacing: 0.02em;
+	text-transform: none;
+	color: var(--hm-white);
+	cursor: pointer;
+}
+
+.housemajik-form.is-land-only .housemajik-room-field {
+	opacity: 0.38;
+}
+
+.housemajik-form.is-land-only .housemajik-room-field input,
+.housemajik-form.is-land-only .housemajik-room-field select,
+.housemajik-form.is-land-only .housemajik-room-field button {
+	cursor: not-allowed;
+}
+
+.housemajik-container .housemajik-field input[type="text"],
+.housemajik-container .housemajik-field input[type="email"],
+.housemajik-container .housemajik-field input[type="tel"],
+.housemajik-container .housemajik-field input[type="number"],
+.housemajik-container .housemajik-field select,
+.housemajik-container .housemajik-field textarea {
+	width: 100%;
+	height: auto;
+	min-height: 3.5rem;
+	padding: 0.85rem 1.1rem;
+	border: 0;
+	border-radius: 0;
+	background: var(--hm-white);
+	color: var(--hm-ink);
+	font-size: 1rem;
+	line-height: 1.4;
+	font-family: inherit;
+	font-weight: 400;
+	box-sizing: border-box;
+	overflow: visible;
+	caret-color: var(--hm-brand);
+	transition: box-shadow 0.2s ease;
+}
+
+.housemajik-container .housemajik-field input::placeholder,
+.housemajik-container .housemajik-field textarea::placeholder {
+	color: #888888;
+}
+
+.housemajik-container .housemajik-field select {
+	padding-top: 0.85rem;
+	padding-bottom: 0.85rem;
+	line-height: normal;
+	background-image: linear-gradient(45deg, transparent 50%, var(--hm-brand) 50%),
+		linear-gradient(135deg, var(--hm-brand) 50%, transparent 50%);
+	background-position: calc(100% - 18px) calc(50% - 3px), calc(100% - 13px) calc(50% - 3px);
+	background-size: 5px 5px, 5px 5px;
+	background-repeat: no-repeat;
+	appearance: none;
+}
+
+.housemajik-field input:focus,
+.housemajik-field select:focus,
+.housemajik-field textarea:focus {
+	outline: none;
+	box-shadow: inset 0 0 0 2px var(--hm-brand);
+}
+
+.housemajik-field textarea {
+	resize: vertical;
+	min-height: 7.5rem;
+}
+
+.housemajik-row {
+	display: flex;
+	gap: 1rem;
+	flex-wrap: wrap;
+}
+
+.housemajik-col-half {
+	flex: 1;
+	min-width: 200px;
+}
+
+.housemajik-row-rooms {
+	align-items: flex-end;
+	flex-wrap: wrap;
+	gap: 1rem 1.15rem;
+}
+
+.housemajik-row-rooms .housemajik-field {
+	flex: 0 0 auto;
+	min-width: 0;
+}
+
+.housemajik-row-rooms .housemajik-input-group {
+	display: flex;
+	width: max-content;
+	grid-template-columns: none;
+	gap: 0.4rem;
+}
+
+.housemajik-row-rooms .housemajik-stepper {
+	flex: 0 0 7.5rem;
+	width: 7.5rem;
+}
+
+.housemajik-container .housemajik-row-rooms .housemajik-field .housemajik-stepper input[type="number"] {
+	flex: 1 1 2.25rem;
+	width: 2.25rem;
+	min-width: 2.1rem;
+}
+
+.housemajik-row-rooms .housemajik-stepper-btn {
+	flex: 0 0 2.25rem;
+}
+
+.housemajik-row-rooms .housemajik-input-group select {
+	flex: 0 0 6.6rem;
+	width: 6.6rem;
+	max-width: 6.6rem;
+}
+
+.housemajik-col-garage select {
+	width: 8.5rem;
+	max-width: 8.5rem;
+}
+
+.housemajik-col-acres {
+	min-width: 9rem;
+}
+
+.housemajik-col-acres input {
+	width: 6.5rem;
+	max-width: 6.5rem;
+}
+
+.housemajik-price-field {
+	position: relative;
+}
+
+.housemajik-price-prefix {
+	position: absolute;
+	left: 1.1rem;
+	top: 50%;
+	transform: translateY(-50%);
+	color: var(--hm-ink);
+	font-size: 1rem;
+	font-weight: 400;
+	line-height: 1;
+	pointer-events: none;
+}
+
+.housemajik-container .housemajik-field .housemajik-price-field input {
+	padding-left: 1.85rem;
+}
+
+.housemajik-multiselect {
+	position: relative;
+}
+
+.housemajik-multiselect-toggle {
+	display: flex;
+	align-items: center;
+	width: 100%;
+	min-height: 3.5rem;
+	padding: 0.85rem 2.4rem 0.85rem 1.1rem;
+	border: 0;
+	border-radius: 0;
+	background-color: var(--hm-white);
+	background-image: linear-gradient(45deg, transparent 50%, var(--hm-brand) 50%),
+		linear-gradient(135deg, var(--hm-brand) 50%, transparent 50%);
+	background-position: calc(100% - 18px) calc(50% - 3px), calc(100% - 13px) calc(50% - 3px);
+	background-size: 5px 5px, 5px 5px;
+	background-repeat: no-repeat;
+	color: var(--hm-ink);
+	font: inherit;
+	font-size: 1rem;
+	font-weight: 400;
+	line-height: 1.4;
+	text-align: left;
+	cursor: pointer;
+}
+
+.housemajik-multiselect-toggle.is-placeholder {
+	color: #888888;
+}
+
+.housemajik-multiselect-toggle:focus {
+	outline: none;
+	box-shadow: inset 0 0 0 2px var(--hm-brand);
+}
+
+.housemajik-multiselect-value {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.housemajik-multiselect-panel {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: calc(100% + 2px);
+	z-index: 40;
+	background: var(--hm-white);
+	max-height: 16.5rem;
+	overflow: auto;
+	box-shadow: 0 10px 28px rgba(0, 0, 0, 0.32);
+}
+
+.housemajik-multiselect-list {
+	list-style: none;
+	margin: 0;
+	padding: 0.3rem 0;
+}
+
+.housemajik-container .housemajik-field .housemajik-multiselect-option {
+	display: flex;
+	align-items: center;
+	gap: 0.7rem;
+	margin: 0;
+	padding: 0.55rem 1.1rem;
+	height: auto;
+	color: var(--hm-ink);
+	font-size: 1rem;
+	font-weight: 400;
+	letter-spacing: 0;
+	text-transform: none;
+	line-height: 1.35;
+	cursor: pointer;
+}
+
+.housemajik-container .housemajik-field .housemajik-multiselect-option:hover,
+.housemajik-container .housemajik-field .housemajik-multiselect-option:focus-within {
+	background: #f4f1ea;
+}
+
+.housemajik-multiselect-option input {
+	width: 1rem;
+	height: 1rem;
+	margin: 0;
+	accent-color: var(--hm-brand);
+	flex: 0 0 auto;
+}
+
+.housemajik-input-group {
+	display: grid;
+	grid-template-columns: minmax(9.5rem, 1fr) 7.25rem;
+	gap: 0.5rem;
+	align-items: stretch;
+}
+
+.housemajik-input-group input,
+.housemajik-input-group select {
+	width: 100%;
+	max-width: 100%;
+	min-width: 0;
+}
+
+.housemajik-stepper {
+	display: flex;
+	align-items: stretch;
+	min-width: 0;
+	border: 0;
+	border-radius: 0;
+	background: var(--hm-white);
+	overflow: hidden;
+}
+
+.housemajik-stepper:focus-within {
+	box-shadow: inset 0 0 0 2px var(--hm-brand);
+}
+
+.housemajik-container .housemajik-field .housemajik-stepper input[type="number"] {
+	flex: 1 0 3.5rem;
+	width: 3.5rem;
+	min-width: 3.5rem;
+	min-height: 3.5rem;
+	height: auto;
+	margin: 0;
+	padding: 0.7rem 0.25rem;
+	border: 0;
+	border-radius: 0;
+	box-shadow: none;
+	text-align: center;
+	appearance: textfield;
+	overflow: visible;
+}
+
+.housemajik-container .housemajik-field .housemajik-stepper input[type="number"]:focus {
+	box-shadow: none;
+}
+
+.housemajik-container .housemajik-field .housemajik-stepper input[type="number"]::-webkit-outer-spin-button,
+.housemajik-container .housemajik-field .housemajik-stepper input[type="number"]::-webkit-inner-spin-button {
+	appearance: none;
+	margin: 0;
+}
+
+.housemajik-stepper-btn {
+	flex: 0 0 2.75rem;
+	min-height: 3.5rem;
+	margin: 0;
+	padding: 0;
+	border: 0;
+	background: var(--hm-paper);
+	color: var(--hm-ink);
+	font-size: 1.15rem;
+	line-height: 1;
+	cursor: pointer;
+}
+
+.housemajik-stepper-btn:hover,
+.housemajik-stepper-btn:focus {
+	background: #eeeae3;
+	color: var(--hm-brand);
+	outline: none;
+}
+
+.housemajik-stepper-btn:active {
+	background: #e4dfd4;
+}
+
+.housemajik-honeypot {
+	position: absolute;
+	left: -9999px;
+	width: 1px;
+	height: 1px;
+}
+
+.housemajik-submit {
+	text-align: center;
+	margin-top: 1.75rem;
+}
+
+.housemajik-submit .housemajik-btn-text {
+	white-space: normal;
+	line-height: 1.35;
+	text-align: center;
+}
+
+.housemajik-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.5rem;
+	padding: 1rem 2rem;
+	border: 0;
+	border-radius: 0;
+	font-size: 0.8125rem;
+	font-weight: 700;
+	letter-spacing: 0.16em;
+	text-transform: uppercase;
+	cursor: pointer;
+	text-decoration: none;
+	font-family: inherit;
+	transition: background 0.2s ease, color 0.2s ease;
+}
+
+.housemajik-btn-primary {
+	width: 100%;
+	background: var(--hm-brand);
+	color: var(--hm-white);
+}
+
+.housemajik-btn-primary:hover,
+.housemajik-btn-primary:focus {
+	background: var(--hm-brand-dark);
+	color: var(--hm-white);
+}
+
+.housemajik-btn-primary:disabled {
+	background: #9a8b73;
+	cursor: wait;
+}
+
+.housemajik-btn-secondary {
+	background: var(--hm-ink);
+	color: var(--hm-white);
+}
+
+.housemajik-btn-secondary:hover,
+.housemajik-btn-secondary:focus {
+	background: #2a2a2a;
+	color: var(--hm-white);
+}
+
+.housemajik-spinner {
+	display: inline-block;
+	width: 16px;
+	height: 16px;
+	border: 2px solid rgba(255, 255, 255, 0.35);
+	border-top-color: #fff;
+	border-radius: 50%;
+	animation: housemajik-spin 0.6s linear infinite;
+}
+
+@keyframes housemajik-spin {
+	to { transform: rotate(360deg); }
+}
+
+.housemajik-results {
+	margin-top: 3.5rem;
+}
+
+.housemajik-results-header {
+	text-align: center;
+	margin: 0 0 2rem;
+}
+
+.housemajik-results-header h3 {
+	margin: 0;
+	font-size: 1.35rem;
+	font-weight: 300;
+	letter-spacing: 0.16em;
+	text-transform: uppercase;
+	color: var(--hm-ink);
+}
+
+.housemajik-tradeoff-copy {
+	margin: 0.85rem auto 0;
+	max-width: 38rem;
+	color: var(--hm-muted);
+	font-size: 1rem;
+	line-height: 1.65;
+	letter-spacing: normal;
+	text-transform: none;
+}
+
+.housemajik-container.housemajik-showing-tradeoff {
+	max-width: 72rem;
+}
+
+.housemajik-tradeoff {
+	display: grid;
+	gap: 2.5rem;
+	width: 100%;
+	min-width: 0;
+}
+
+.housemajik-tradeoff-pile {
+	min-width: 0;
+}
+
+.housemajik-tradeoff-pile h4 {
+	margin: 0 0 0.85rem;
+	font-size: 1.2rem;
+	font-weight: 400;
+	line-height: 1.35;
+	letter-spacing: 0.02em;
+	color: var(--hm-ink);
+}
+
+.housemajik-tradeoff-swap {
+	margin: 0 0 1.25rem;
+}
+
+.housemajik-tradeoff-swap p {
+	margin: 0 0 0.35rem;
+	font-family: Lato, "Helvetica Neue", Helvetica, Arial, sans-serif;
+	font-size: 1rem;
+	font-weight: 400;
+	line-height: 1.65;
+	letter-spacing: normal;
+	color: var(--hm-text);
+	overflow-wrap: break-word;
+}
+
+.housemajik-tradeoff-pile .housemajik-listing-card {
+	max-width: 100%;
+}
+
+.housemajik-listing-content .housemajik-tradeoff-swap {
+	margin: 1.15rem 0 0;
+	padding: 1rem 0 0;
+	border-top: 1px solid var(--hm-hair);
+}
+
+.housemajik-container .housemajik-tradeoff-label {
+	display: inline;
+	margin-right: 0.25rem;
+	font-family: Lato, "Helvetica Neue", Helvetica, Arial, sans-serif;
+	font-size: inherit;
+	font-weight: 700;
+	letter-spacing: normal;
+	text-transform: none;
+	color: var(--hm-ink);
+}
+
+@media (min-width: 900px) {
+	.housemajik-tradeoff {
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+		gap: 2rem;
+		align-items: start;
+	}
+}
+
+.housemajik-listings {
+	display: grid;
+	gap: 2rem;
+}
+
+.housemajik-listing-card {
+	background: var(--hm-white);
+	border-radius: 0;
+	overflow: hidden;
+	box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+.housemajik-listing-card:hover {
+	box-shadow: 0 14px 32px rgba(0, 0, 0, 0.12);
+}
+
+.housemajik-listing-image {
+	width: 100%;
+	height: 300px;
+	object-fit: cover;
+	background: #ddd8ce;
+}
+
+.housemajik-listing-content {
+	padding: 1.75rem 1.6rem 1.6rem;
+}
+
+.housemajik-listing-address {
+	margin: 0 0 0.2rem;
+	font-size: 1.2rem;
+	font-weight: 400;
+	color: var(--hm-ink);
+	letter-spacing: 0.02em;
+}
+
+.housemajik-listing-city {
+	margin: 0 0 0.85rem;
+	color: var(--hm-muted);
+	font-size: 0.9rem;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+}
+
+.housemajik-listing-price {
+	margin: 0 0 1rem;
+	font-size: 1.65rem;
+	font-weight: 300;
+	color: var(--hm-brand);
+	letter-spacing: 0.04em;
+}
+
+.housemajik-listing-details {
+	display: flex;
+	gap: 1.15rem;
+	margin: 0 0 1.1rem;
+	font-size: 0.9rem;
+	color: var(--hm-text);
+	flex-wrap: wrap;
+}
+
+.housemajik-listing-detail {
+	display: flex;
+	align-items: center;
+	gap: 0.3rem;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	font-size: 0.75rem;
+}
+
+.housemajik-listing-why {
+	margin: 1.15rem 0;
+	padding: 1rem 0 0;
+	border-top: 1px solid var(--hm-hair);
+	font-size: 0.95rem;
+	color: var(--hm-text);
+}
+
+.housemajik-container .housemajik-listing-why .housemajik-why-label {
+	display: inline;
+	margin-right: 0.25rem;
+	font-family: Lato, "Helvetica Neue", Helvetica, Arial, sans-serif;
+	font-size: inherit;
+	font-weight: 700;
+	letter-spacing: normal;
+	text-transform: none;
+	color: var(--hm-ink);
+}
+
+.housemajik-listing-piles {
+	margin: 0.85rem 0 0;
+	padding: 0;
+	list-style: none;
+	font-size: 0.875rem;
+	color: var(--hm-text);
+}
+
+.housemajik-listing-piles li {
+	margin: 0 0 0.35rem;
+	line-height: 1.45;
+}
+
+.housemajik-container .housemajik-listing-piles .housemajik-pile-label {
+	display: inline;
+	margin-right: 0.25rem;
+	font-family: Lato, "Helvetica Neue", Helvetica, Arial, sans-serif;
+	font-size: inherit;
+	font-weight: 700;
+	letter-spacing: normal;
+	text-transform: none;
+	color: var(--hm-ink);
+}
+
+.housemajik-save-property-row {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 1rem 1.5rem;
+	margin: 1.5rem 0 0;
+}
+
+.housemajik-save-property-row .housemajik-save-property {
+	width: auto;
+	min-width: 12rem;
+}
+
+.housemajik-saved-back a,
+.housemajik-listing-address a {
+	color: var(--hm-brand);
+	text-decoration: none;
+	font-size: 0.6875rem;
+	font-weight: 700;
+	letter-spacing: 0.16em;
+	text-transform: uppercase;
+}
+
+.housemajik-listing-address a {
+	font-size: inherit;
+	font-weight: inherit;
+	letter-spacing: inherit;
+	text-transform: none;
+	color: inherit;
+}
+
+.housemajik-saved-back a:hover,
+.housemajik-listing-address a:hover {
+	color: var(--hm-brand-dark);
+	text-decoration: underline;
+}
+
+.housemajik-saved-homes-search {
+	margin: 1.5rem 0 0;
+	text-align: center;
+}
+
+.housemajik-saved-homes-search a {
+	color: var(--hm-brand);
+	font-size: 0.9rem;
+	letter-spacing: 0.06em;
+	text-decoration: none;
+}
+
+.housemajik-saved-homes-search a:hover,
+.housemajik-saved-homes-search a:focus {
+	color: var(--hm-brand-dark);
+	text-decoration: underline;
+}
+
+.housemajik-saved-homes-btn {
+	width: auto;
+	font-size: 0.9375rem;
+	letter-spacing: 0.1em;
+}
+
+.housemajik-saved-page .housemajik-detail-content {
+	grid-template-columns: 1fr;
+}
+
+@media (min-width: 900px) {
+	.housemajik-saved-page .housemajik-listings {
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+	}
+}
+
+.housemajik-saved-tags {
+	margin: 0 0 0.5rem;
+	font-size: 0.6875rem;
+	font-weight: 700;
+	letter-spacing: 0.16em;
+	text-transform: uppercase;
+	color: var(--hm-brand);
+}
+
+.housemajik-saved-back {
+	margin: 2rem 0 0;
+}
+
+.housemajik-saved-page .housemajik-listing-actions {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 1rem;
+}
+
+.housemajik-saved-page .housemajik-save-property {
+	width: auto;
+}
+
+.housemajik-listing-reactions {
+	margin-top: 1.5rem;
+	padding-top: 1.5rem;
+	border-top: 1px solid var(--hm-hair);
+}
+
+.housemajik-listing-reactions h4 {
+	margin: 0 0 1rem;
+	font-size: 0.75rem;
+	font-weight: 700;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	color: var(--hm-ink);
+}
+
+.housemajik-listing-reactions textarea {
+	width: 100%;
+	margin-bottom: 0.75rem;
+	padding: 0.85rem 1rem;
+	border: 1px solid var(--hm-line);
+	border-radius: 0;
+	background: var(--hm-paper);
+	color: var(--hm-ink);
+	font-size: 0.95rem;
+	font-family: inherit;
+	resize: vertical;
+	min-height: 72px;
+}
+
+.housemajik-listing-reactions textarea:focus {
+	outline: none;
+	border-color: var(--hm-brand);
+	box-shadow: inset 0 0 0 1px var(--hm-brand);
+}
+
+.housemajik-reaction-save {
+	font-size: 0.75rem;
+	padding: 0.7rem 1.2rem;
+}
+
+.housemajik-listing-actions {
+	margin-top: 1.15rem;
+	display: flex;
+	gap: 1rem;
+	flex-wrap: wrap;
+}
+
+.housemajik-btn-link {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0.85rem 1.4rem;
+	background: var(--hm-brand);
+	color: var(--hm-white);
+	text-decoration: none;
+	border-radius: 0;
+	font-weight: 700;
+	font-size: 0.75rem;
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+}
+
+.housemajik-btn-link:hover,
+.housemajik-btn-link:focus {
+	background: var(--hm-brand-dark);
+	color: var(--hm-white);
+}
+
+.housemajik-empty {
+	text-align: center;
+	margin-top: 3rem;
+	padding: 3rem 2rem;
+	background: var(--hm-white);
+	border-radius: 0;
+	box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+.housemajik-empty h3 {
+	margin: 0 0 0.75rem;
+	font-size: 1.25rem;
+	font-weight: 300;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	color: var(--hm-ink);
+}
+
+.housemajik-empty p,
+.housemajik-empty-copy {
+	margin: 0 auto 1.75rem;
+	max-width: 38rem;
+	color: var(--hm-muted);
+}
+
+.housemajik-empty-actions {
+	display: flex;
+	flex-direction: column;
+	gap: 0.75rem;
+	max-width: 22rem;
+	margin: 0 auto;
+}
+
+.housemajik-empty-actions .housemajik-btn {
+	width: 100%;
+}
+
+.housemajik-modal {
+	--hm-brand: #847252;
+	--hm-brand-dark: #6d5e43;
+	--hm-ink: #1a1a1a;
+	--hm-text: #555555;
+	--hm-muted: #666666;
+	--hm-paper: #f9f9f9;
+	--hm-white: #ffffff;
+	--hm-line: #bbbbbb;
+	--hm-hair: #e6e6e6;
+	--hm-focus: #847252;
+	position: fixed;
+	inset: 0;
+	z-index: 100000;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 1rem;
+	font-family: Lato, "Helvetica Neue", Helvetica, Arial, sans-serif;
+	color: #555555;
+}
+
+.housemajik-modal-overlay {
+	position: absolute;
+	inset: 0;
+	background: rgba(10, 10, 10, 0.62);
+}
+
+.housemajik-modal-content {
+	position: relative;
+	z-index: 1;
+	width: 100%;
+	max-width: 500px;
+	max-height: 90vh;
+	overflow-y: auto;
+	padding: 2.25rem 2rem;
+	background: #ffffff;
+	color: #555555;
+	border-radius: 0;
+	box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+}
+
+.housemajik-modal .housemajik-btn-primary {
+	width: auto;
+	background: #847252;
+	color: #ffffff;
+}
+
+.housemajik-modal .housemajik-btn-secondary {
+	background: #1a1a1a;
+	color: #ffffff;
+}
+
+.housemajik-modal-close {
+	position: absolute;
+	top: 1rem;
+	right: 1rem;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 2rem;
+	height: 2rem;
+	padding: 0;
+	border: 0;
+	background: none;
+	color: var(--hm-muted);
+	cursor: pointer;
+}
+
+.housemajik-modal-close svg {
+	width: 18px;
+	height: 18px;
+}
+
+.housemajik-modal-close:hover {
+	color: var(--hm-ink);
+}
+
+.housemajik-modal-content h3 {
+	margin: 0 0 0.5rem;
+	font-size: 1.25rem;
+	font-weight: 300;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	color: var(--hm-ink);
+}
+
+.housemajik-modal-content > p {
+	margin: 0 0 1.5rem;
+	color: var(--hm-muted);
+}
+
+.housemajik-modal-form {
+	padding: 0;
+	box-shadow: none;
+	background: transparent;
+}
+
+.housemajik-required-note {
+	margin: 0 0 0.85rem;
+	font-size: 0.75rem;
+	line-height: 1.4;
+	letter-spacing: 0.02em;
+	color: var(--hm-muted);
+}
+
+.housemajik-required,
+.housemajik-required-note span {
+	color: var(--hm-brand);
+	font-weight: 700;
+}
+
+.housemajik-modal-form .housemajik-field {
+	margin-bottom: 1.15rem;
+}
+
+.housemajik-modal-form .housemajik-row {
+	gap: 0.75rem;
+}
+
+.housemajik-modal-form .housemajik-col-half {
+	min-width: 8.25rem;
+}
+
+.housemajik-modal-form .housemajik-field label,
+.housemajik-modal-content .housemajik-field label {
+	color: var(--hm-ink);
+}
+
+.housemajik-modal-form .housemajik-field input,
+.housemajik-modal-form .housemajik-field textarea {
+	border: 1px solid var(--hm-line);
+	background: var(--hm-paper);
+}
+
+.housemajik-checkbox {
+	display: flex;
+	align-items: flex-start;
+	gap: 0.55rem;
+	font-weight: 400;
+	color: var(--hm-text);
+	cursor: pointer;
+}
+
+.housemajik-checkbox input[type="checkbox"] {
+	margin-top: 0.2rem;
+	width: auto;
+	accent-color: var(--hm-brand);
+	cursor: pointer;
+}
+
+.housemajik-consent {
+	margin: 1rem 0 1.5rem;
+	font-size: 0.8125rem;
+	line-height: 1.55;
+	color: var(--hm-muted);
+}
+
+.housemajik-modal-actions {
+	display: flex;
+	gap: 0.75rem;
+	justify-content: flex-end;
+	margin-top: 1.5rem;
+}
+
+.housemajik-modal-actions .housemajik-btn {
+	padding: 0.8rem 1.25rem;
+	font-size: 0.75rem;
+}
+
+@media (max-width: 768px) {
+	.housemajik-search-form {
+		padding: 1.15rem 1.5rem 1.1rem;
+	}
+
+	.housemajik-header {
+		margin: 0 0 1rem;
+	}
+
+	.housemajik-header h2 {
+		margin: 0 0 0.5rem;
+		font-size: 1.2rem;
+		letter-spacing: 0.12em;
+	}
+
+	.housemajik-field {
+		margin-bottom: 0.75rem;
+	}
+
+	.housemajik-container .housemajik-field input[type="text"],
+	.housemajik-container .housemajik-field input[type="email"],
+	.housemajik-container .housemajik-field input[type="tel"],
+	.housemajik-container .housemajik-field input[type="number"],
+	.housemajik-container .housemajik-field select,
+	.housemajik-container .housemajik-field textarea,
+	.housemajik-container .housemajik-field .housemajik-stepper input[type="number"],
+	.housemajik-stepper-btn,
+	.housemajik-multiselect-toggle {
+		min-height: 2.75rem;
+	}
+
+	.housemajik-field textarea {
+		min-height: 2.75rem;
+		max-height: 4.25rem;
+		overflow-y: auto;
+	}
+
+	.housemajik-input-group {
+		grid-template-columns: 1fr;
+		gap: 0.35rem;
+	}
+
+	.housemajik-row-rooms .housemajik-input-group {
+		display: flex;
+		width: max-content;
+		grid-template-columns: none;
+		gap: 0.35rem;
+	}
+
+	.housemajik-submit {
+		margin-top: 0.85rem;
+	}
+
+	.housemajik-btn {
+		padding: 0.8rem 1.25rem;
+	}
+
+	.housemajik-row {
+		flex-wrap: wrap;
+	}
+
+	.housemajik-col-half {
+		min-width: calc(50% - 0.5rem);
+	}
+
+	.housemajik-col-third,
+	.housemajik-col-garage,
+	.housemajik-col-acres {
+		flex: 0 0 auto;
+		min-width: 0;
+	}
+
+	.housemajik-listing-content {
+		padding: 1.25rem;
+	}
+
+	.housemajik-listing-actions {
+		flex-direction: column;
+	}
+
+	.housemajik-btn-link {
+		text-align: center;
+		width: 100%;
+	}
+
+	.housemajik-modal-content {
+		padding: 1.5rem 1.15rem;
+	}
+
+	.housemajik-modal-actions {
+		flex-direction: column;
+	}
+
+	.housemajik-modal-actions .housemajik-btn {
+		width: 100%;
+	}
+}
+
+.housemajik-detail {
+	max-width: 1200px;
+	margin: 0 auto;
+	padding: 2rem 1rem;
+	font-family: Lato, "Helvetica Neue", Helvetica, Arial, sans-serif;
+	color: var(--hm-text);
+	-webkit-font-smoothing: antialiased;
+}
+
+.housemajik-detail-photos {
+	margin-bottom: 2rem;
+}
+
+.housemajik-detail-photo-main {
+	width: 100%;
+	height: 500px;
+	object-fit: cover;
+	border-radius: 0;
+	margin-bottom: 1rem;
+}
+
+.housemajik-detail-photo-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+	gap: 1rem;
+}
+
+.housemajik-detail-photo-thumb {
+	width: 100%;
+	height: 150px;
+	object-fit: cover;
+	border-radius: 0;
+	cursor: pointer;
+}
+
+.housemajik-detail-photo-thumb:hover {
+	opacity: 0.85;
+}
+
+.housemajik-detail-content {
+	display: grid;
+	grid-template-columns: 2fr 1fr;
+	gap: 2rem;
+}
+
+.housemajik-detail-main,
+.housemajik-detail-sidebar {
+	background: #fff;
+	padding: 2rem;
+	border-radius: 0;
+	box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+.housemajik-detail-sidebar {
+	height: fit-content;
+	position: sticky;
+	top: 2rem;
+}
+
+.housemajik-detail-main h1 {
+	margin: 0 0 0.4rem;
+	font-weight: 400;
+	letter-spacing: 0.02em;
+	color: var(--hm-ink);
+}
+
+.housemajik-detail-price {
+	margin: 0 0 2rem;
+	font-size: 2rem;
+	font-weight: 300;
+	letter-spacing: 0.04em;
+	color: var(--hm-brand);
+}
+
+.housemajik-detail-sub {
+	margin: 0 0 1rem;
+	font-size: 0.95rem;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: var(--hm-muted);
+}
+
+.housemajik-detail-heading {
+	margin: 2rem 0 1rem;
+	font-size: 1.15rem;
+	font-weight: 300;
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+	color: var(--hm-ink);
+}
+
+.housemajik-detail-copy {
+	margin: 0;
+	line-height: 1.8;
+	color: var(--hm-text);
+}
+
+.housemajik-detail-facts {
+	display: grid;
+	grid-template-columns: repeat(2, 1fr);
+	gap: 1rem;
+	margin: 2rem 0;
+	padding: 1.5rem;
+	background: var(--hm-paper);
+	border-radius: 0;
+}
+
+.housemajik-detail-fact {
+	display: flex;
+	flex-direction: column;
+}
+
+.housemajik-detail-fact-label {
+	margin-bottom: 0.25rem;
+	font-size: 0.6875rem;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	color: var(--hm-brand);
+}
+
+.housemajik-detail-fact-value {
+	font-size: 1.125rem;
+	font-weight: 400;
+	color: var(--hm-ink);
+}
+
+.housemajik-detail-map {
+	width: 100%;
+	height: 300px;
+	margin: 2rem 0 0.5rem;
+	border-radius: 0;
+	background: #eeeae3;
+	overflow: hidden;
+}
+
+.housemajik-detail-map iframe {
+	display: block;
+	width: 100%;
+	height: 100%;
+	border: 0;
+}
+
+.housemajik-map-attrib {
+	margin: 0 0 2rem;
+	font-size: 0.75rem;
+	color: var(--hm-muted);
+}
+
+.housemajik-map-attrib a {
+	color: var(--hm-brand);
+}
+
+.housemajik-sidebar-title {
+	margin: 0 0 0.75rem;
+	font-size: 1.05rem;
+	font-weight: 300;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	color: var(--hm-ink);
+}
+
+.housemajik-sidebar-copy {
+	margin: 0 0 1.5rem;
+	color: var(--hm-muted);
+}
+
+.housemajik-sidebar-name {
+	display: block;
+	margin: 0 0 0.35rem;
+	color: var(--hm-ink);
+	font-weight: 700;
+	letter-spacing: 0.04em;
+}
+
+.housemajik-sidebar-firm {
+	display: block;
+	color: var(--hm-muted);
+	font-size: 0.95rem;
+}
+
+.housemajik-sidebar-ask {
+	width: 100%;
+	margin-top: 1.5rem;
+	text-align: center;
+	text-decoration: none;
+}
+
+.housemajik-sidebar-back {
+	width: 100%;
+	margin-top: 1rem;
+	text-align: center;
+	text-decoration: none;
+}
+
+.housemajik-mls {
+	margin-top: 2rem;
+	font-size: 0.8125rem;
+	color: var(--hm-muted);
+}
+
+.housemajik-sample-callout,
+.housemajik-idx,
+.housemajik-detail-idx {
+	margin-top: 2rem;
+	padding: 1rem 0 0;
+	border-top: 1px solid var(--hm-hair);
+	font-size: 0.8125rem;
+	color: var(--hm-muted);
+}
+
+@media (max-width: 968px) {
+	.housemajik-detail-content {
+		grid-template-columns: 1fr;
+	}
+
+	.housemajik-detail-sidebar {
+		position: static;
+	}
+
+	.housemajik-detail-photo-main {
+		height: 300px;
+	}
+}
+
+.housemajik-photo-stage {
+	position: relative;
+	background: var(--hm-ink);
+}
+
+.housemajik-photo-stage .housemajik-listing-image {
+	display: block;
+	margin: 0;
+}
+
+.housemajik-photo-stage-detail .housemajik-detail-photo-main {
+	margin-bottom: 0;
+	border-radius: 0;
+}
+
+.housemajik-photo-nav {
+	position: absolute;
+	top: 50%;
+	transform: translateY(-50%);
+	width: 44px;
+	height: 44px;
+	border: 0;
+	border-radius: 0;
+	background: var(--hm-brand);
+	color: #fff;
+	cursor: default;
+	pointer-events: none;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.housemajik-photo-nav svg {
+	width: 18px;
+	height: 18px;
+}
+
+.housemajik-photo-prev {
+	left: 0;
+}
+
+.housemajik-photo-next {
+	right: 0;
+}
+
+.housemajik-photo-count {
+	position: absolute;
+	right: 0.75rem;
+	bottom: 0.75rem;
+	padding: 0.25rem 0.55rem;
+	border-radius: 0;
+	background: rgba(26, 26, 26, 0.78);
+	color: #fff;
+	font-size: 0.6875rem;
+	letter-spacing: 0.08em;
+}
+
+.housemajik-idx {
+	margin-top: 2rem;
+	padding: 1rem 0 0;
+	background: transparent;
+	border: 0;
+	border-top: 1px solid var(--hm-hair);
+	font-size: 0.8125rem;
+	color: var(--hm-muted);
+}
